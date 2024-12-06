@@ -9,11 +9,7 @@ namespace myGame
         private GraphicsDeviceManager _graphics;
         private SpriteBatch _spriteBatch;
 
-        // Laad het hartje in en configureer de schaal en afstand
-        private Texture2D heart;
-        private Vector2 heartPosition;
-        private float heartScale = 0.1f; // Maak het hartje kleiner (30% van originele grootte)
-        private int numberOfHearts = 3; // Aantal harten
+        private Texture2D backgroundTexture;
 
         public Game1()
         {
@@ -24,14 +20,18 @@ namespace myGame
 
         protected override void Initialize()
         {
-            heartPosition = new Vector2(10, 10); // Startpositie linksboven
             base.Initialize();
         }
 
         protected override void LoadContent()
         {
             _spriteBatch = new SpriteBatch(GraphicsDevice);
-            heart = Content.Load<Texture2D>("hartje"); // Zorg dat de naam klopt
+            backgroundTexture = Content.Load<Texture2D>("space"); 
+        }
+
+        protected override void Update(GameTime gameTime)
+        {
+            base.Update(gameTime);
         }
 
         protected override void Draw(GameTime gameTime)
@@ -40,12 +40,8 @@ namespace myGame
 
             _spriteBatch.Begin();
 
-            // Teken de harten naast elkaar
-            for (int i = 0; i < numberOfHearts; i++)
-            {
-                Vector2 position = new Vector2(heartPosition.X + i * (heart.Width * heartScale + 5), heartPosition.Y);
-                _spriteBatch.Draw(heart, position, null, Color.White, 0f, Vector2.Zero, heartScale, SpriteEffects.None, 0f);
-            }
+            // Achtergrond zodat  deze het hele scherm vult
+            _spriteBatch.Draw(backgroundTexture, new Rectangle(0, 0, _graphics.PreferredBackBufferWidth, _graphics.PreferredBackBufferHeight), Color.White);
 
             _spriteBatch.End();
 
