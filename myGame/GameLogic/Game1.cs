@@ -12,12 +12,18 @@ namespace myGame.GameLogic
         private SpriteBatch _spriteBatch;
 
         private Texture2D backgroundTexture;
+        private Texture2D heartTexture;
+
         private StartScreen startScreen;
+        private PausePlayScreen pausePlayScreen;
         private Rocket rocket;
 
         private bool isGameStarted = false;
+        private bool isGamePaused = false; 
         private float backgroundPositionY = 0;
         private float backgroundSpeed = 2f;
+
+        private const int MaxLives = 3;
 
         public Game1()
         {
@@ -38,9 +44,14 @@ namespace myGame.GameLogic
         protected override void LoadContent()
         {
             _spriteBatch = new SpriteBatch(GraphicsDevice);
+
             backgroundTexture = Content.Load<Texture2D>("space");
+            heartTexture = Content.Load<Texture2D>("hartje");
+
             startScreen = new StartScreen(Content);
-            rocket = new Rocket(Content);
+            pausePlayScreen = new PausePlayScreen(Content);
+
+            rocket = new Rocket(Content, new Vector2(950, 850));
         }
 
         protected override void Update(GameTime gameTime)
@@ -49,15 +60,22 @@ namespace myGame.GameLogic
 
             if (!isGameStarted)
             {
-                startScreen.Update(gameTime, mouseState, ref isGameStarted, this);
+                startScreen.Update(mouseState, ref isGameStarted, this);
                 return;
+            }
+
+            pausePlayScreen.Update(mouseState, ref isGamePaused);
+
+            if (isGamePaused)
+            {
+                return; 
             }
 
             rocket.Update(gameTime, Keyboard.GetState());
 
             if (rocket.IsMovingUp())
             {
-                backgroundPositionY += backgroundSpeed;
+                backgroundPositionY += backgroundSpeed * 1.5f;
             }
 
             if (backgroundPositionY >= _graphics.PreferredBackBufferHeight)
@@ -89,6 +107,25 @@ namespace myGame.GameLogic
             else
             {
                 rocket.Draw(_spriteBatch);
+
+                // Hartjes tekenen
+                for (int i = 0; i < MaxLives; i++)
+                {
+                    _spriteBatch.Draw(
+                        heartTexture,
+                        new Vector2(10 + (i * (heartTexture.Width * 0.1f + 5)), 10),
+                        null,
+                        Color.White,
+                        0f,
+                        Vector2.Zero,
+                        0.1f,
+                        SpriteEffects.None,
+                        0f
+                    );
+                }
+
+                // Pauzeknop tekenen
+                pausePlayScreen.Draw(_spriteBatch);
             }
 
             _spriteBatch.End();

@@ -11,10 +11,10 @@ namespace myGame.GameEntities
         private float speed = 4f;
         private float scale = 0.16f;
 
-        public Rocket(Microsoft.Xna.Framework.Content.ContentManager content)
+        public Rocket(Microsoft.Xna.Framework.Content.ContentManager content, Vector2 startPosition)
         {
             texture = content.Load<Texture2D>("RocketSprite");
-            position = new Vector2(950, 850);
+            position = startPosition;
         }
 
         public void Update(GameTime gameTime, KeyboardState keyboardState)
