@@ -32,6 +32,9 @@ namespace myGame
 
         private List<Bullet> bullets;
 
+        private CoinCollector coinCollector;
+
+
         public Game1()
         {
             _graphics = new GraphicsDeviceManager(this);
@@ -65,8 +68,11 @@ namespace myGame
             Texture2D bulletTexture = Content.Load<Texture2D>("bullet");
 
             rocket = new Rocket(rocketTexture, bulletTexture, new Vector2(950, 850));
-
             coinManager = new CoinManager(coinTexture);
+
+            // Observer toevoegen
+            coinCollector = new CoinCollector();
+            coinManager.AddObserver(coinCollector);
             coinManager.GenerateRandomCoins(5, GraphicsDevice.Viewport.Bounds, rocket.Position.Y);
         }
 
@@ -193,7 +199,7 @@ namespace myGame
                     }
 
                     // Verzamelde coins tonen
-                    string coinText = $"Coins: {coinManager.CollectedCoins}";
+                    string coinText = $"Coins: {coinCollector.TotalCoins}";
                     Vector2 textSize = font.MeasureString(coinText);
                     Vector2 textPosition = new Vector2(
                         (_graphics.PreferredBackBufferWidth / 2) - (textSize.X / 2),

@@ -1,6 +1,7 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using myGame.GameEntities;
+using myGame.GameInterfaces;
 using System;
 using System.Collections.Generic;
 
@@ -10,7 +11,7 @@ namespace myGame.GameManagers
     {
         private Texture2D coinTexture;
         private List<Coin> coins = new List<Coin>();
-        public int CollectedCoins { get; private set; } = 0;
+        private List<ICoinCollector> observers = new List<ICoinCollector>();
 
         private int viewportHeight;
         private int viewportWidth;
@@ -20,7 +21,21 @@ namespace myGame.GameManagers
             coinTexture = texture;
         }
 
-        // Methode om willekeurige coins te genereren, met maxYPosition als limiet
+        // Observers toevoegen
+        public void AddObserver(ICoinCollector observer)
+        {
+            observers.Add(observer);
+        }
+
+        // Coin-verzamelaars notificeren
+        private void NotifyCoinCollected()
+        {
+            foreach (var observer in observers)
+            {
+                observer.OnCoinCollected();
+            }
+        }
+
         public void GenerateRandomCoins(int count, Rectangle bounds, float maxYPosition)
         {
             viewportWidth = bounds.Width;
@@ -36,27 +51,24 @@ namespace myGame.GameManagers
             }
         }
 
-        // Update-methode om interacties en hergeneratie van coins te verwerken
         public void Update(GameTime gameTime, Rectangle playerBounds, float backgroundOffset, float maxYPosition)
         {
-            // Check of de speler coins oppakt
+            // Checken of de speler coins oppakt
             for (int i = coins.Count - 1; i >= 0; i--)
             {
                 if (playerBounds.Intersects(coins[i].Bounds))
                 {
                     coins.RemoveAt(i);
-                    CollectedCoins++;
+                    NotifyCoinCollected(); 
                 }
             }
 
-            // Als de achtergrond is gereset, genereer nieuwe coins boven de raket
             if (backgroundOffset >= viewportHeight)
             {
                 GenerateRandomCoins(5, new Rectangle(0, 0, viewportWidth, viewportHeight), maxYPosition);
             }
         }
 
-        // Tekent alle coins op het scherm
         public void Draw(SpriteBatch spriteBatch)
         {
             foreach (var coin in coins)
