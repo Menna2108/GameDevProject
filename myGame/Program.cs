@@ -1,3 +1,3 @@
 ﻿
-using var game = new myGame.GameLogic.Game1();
+using var game = new myGame.Game1();
 game.Run();

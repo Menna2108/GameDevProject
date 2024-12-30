@@ -15,7 +15,6 @@ namespace myGame.GameScreens
         private float exitButtonScale = 0.4f;
         private bool isGrowing = true;
 
-        // Factor voor langzamere scaling van de Exit-knop
         private const float ExitScalingFactor = 0.5f;
 
         public StartScreen(Microsoft.Xna.Framework.Content.ContentManager content)
