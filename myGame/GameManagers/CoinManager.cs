@@ -59,7 +59,7 @@ namespace myGame.GameManagers
                 if (playerBounds.Intersects(coins[i].Bounds))
                 {
                     coins.RemoveAt(i);
-                    NotifyCoinCollected(); 
+                    NotifyCoinCollected();
                 }
             }
 

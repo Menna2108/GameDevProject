@@ -8,7 +8,7 @@ namespace myGame.GameEntities
         private Texture2D texture;
         private Vector2 position;
         private float speed = 10f;
-        private float scale = 0.1f; 
+        private float scale = 0.1f;
 
         public bool IsActive { get; private set; } = true;
 
@@ -24,10 +24,13 @@ namespace myGame.GameEntities
             this.texture = texture;
             position = startPosition;
         }
-
+        public void Deactivate()
+        {
+            IsActive = false;
+        }
         public void Update(GameTime gameTime)
         {
-            position.Y -= speed; 
+            position.Y -= speed;
 
             if (position.Y < 0)
                 IsActive = false;
@@ -44,7 +47,7 @@ namespace myGame.GameEntities
                     Color.White,
                     0f,
                     Vector2.Zero,
-                    scale, 
+                    scale,
                     SpriteEffects.None,
                     0f
                 );

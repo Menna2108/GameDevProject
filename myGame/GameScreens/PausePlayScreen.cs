@@ -10,13 +10,13 @@ namespace myGame.GameScreens
         private Texture2D playButtonTexture;
         private Vector2 buttonPosition;
 
-        private const float ButtonScale = 0.3f; 
-        private const float PlayButtonAdjustment = 0.92f; 
-        private bool isPaused = false; 
+        private const float ButtonScale = 0.3f;
+        private const float PlayButtonAdjustment = 0.92f;
+        private bool isPaused = false;
 
         // Offsets om knoppen visueel uit te lijnen -> omdat de originele hadden verschillende grotte
         private Vector2 pauseButtonOffset = new Vector2(0, 0);
-        private Vector2 playButtonOffset = new Vector2(5, 5); 
+        private Vector2 playButtonOffset = new Vector2(5, 5);
 
         public PausePlayScreen(Microsoft.Xna.Framework.Content.ContentManager content)
         {
@@ -40,7 +40,7 @@ namespace myGame.GameScreens
             // Klik-detectie
             if (mouseState.LeftButton == ButtonState.Pressed && buttonBounds.Contains(mouseState.Position))
             {
-                isPaused = !isPaused; 
+                isPaused = !isPaused;
                 isGamePaused = isPaused;
             }
         }

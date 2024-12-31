@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace myGame.GameManagers
 {
-    internal class GameManager
+    public class GameManager
     {
         private static GameManager _instance;
         public static GameManager Instance => _instance ??= new GameManager();

@@ -4,6 +4,7 @@ using Microsoft.Xna.Framework.Input;
 using myGame.GameEntities;
 using myGame.GameManagers;
 using myGame.GameScreens;
+using System;
 using System.Collections.Generic;
 
 namespace myGame
@@ -16,12 +17,15 @@ namespace myGame
         private Texture2D backgroundTexture;
         private Texture2D heartTexture;
         private Texture2D coinTexture;
+        private Texture2D rocketEnemyTexture;
+        private Texture2D rocketBulletTexture;
 
         private StartScreen startScreen;
         private PausePlayScreen pausePlayScreen;
         private Rocket rocket;
 
         private CoinManager coinManager;
+        private EnemyManager enemyManager;
 
         private SpriteFont font;
 
@@ -29,11 +33,13 @@ namespace myGame
         private float backgroundSpeed = 2f;
 
         private const int MaxLives = 3;
+        private int currentLives = MaxLives;
 
-        private List<Bullet> bullets;
+        private int currentLevel = 1;
+
+        private List<Bullet> playerBullets;
 
         private CoinCollector coinCollector;
-
 
         public Game1()
         {
@@ -47,7 +53,7 @@ namespace myGame
             _graphics.PreferredBackBufferWidth = 1900;
             _graphics.PreferredBackBufferHeight = 950;
             _graphics.ApplyChanges();
-            bullets = new List<Bullet>();
+            playerBullets = new List<Bullet>();
 
             base.Initialize();
         }
@@ -59,21 +65,24 @@ namespace myGame
             backgroundTexture = Content.Load<Texture2D>("space");
             heartTexture = Content.Load<Texture2D>("hartje");
             coinTexture = Content.Load<Texture2D>("coin");
+            rocketEnemyTexture = Content.Load<Texture2D>("Enemy1");
+            rocketBulletTexture = Content.Load<Texture2D>("bullet");
             font = Content.Load<SpriteFont>("Fonts/coinFont");
 
             startScreen = new StartScreen(Content);
             pausePlayScreen = new PausePlayScreen(Content);
 
-            Texture2D rocketTexture = Content.Load<Texture2D>("RocketSprite"); 
-            Texture2D bulletTexture = Content.Load<Texture2D>("bullet");
-
-            rocket = new Rocket(rocketTexture, bulletTexture, new Vector2(950, 850));
+            Texture2D rocketTexture = Content.Load<Texture2D>("RocketSprite");
+            rocket = new Rocket(rocketTexture, rocketBulletTexture, new Vector2(950, 850));
             coinManager = new CoinManager(coinTexture);
 
             // Observer toevoegen
             coinCollector = new CoinCollector();
             coinManager.AddObserver(coinCollector);
             coinManager.GenerateRandomCoins(5, GraphicsDevice.Viewport.Bounds, rocket.Position.Y);
+
+            // EnemyManager
+            enemyManager = new EnemyManager(rocketEnemyTexture, rocketBulletTexture);
         }
 
         protected override void Update(GameTime gameTime)
@@ -85,13 +94,13 @@ namespace myGame
             if (!isGameStarted)
             {
                 startScreen.Update(mouseState, ref isGameStarted, this);
-                GameManager.Instance.IsGameStarted = isGameStarted; 
+                GameManager.Instance.IsGameStarted = isGameStarted;
                 return;
             }
 
             bool isPaused = GameManager.Instance.IsPaused;
             pausePlayScreen.Update(mouseState, ref isPaused);
-            GameManager.Instance.IsPaused = isPaused; 
+            GameManager.Instance.IsPaused = isPaused;
 
             if (isPaused)
             {
@@ -107,17 +116,17 @@ namespace myGame
                 Bullet newBullet = rocket.Shoot();
                 if (newBullet != null)
                 {
-                    bullets.Add(newBullet);
+                    playerBullets.Add(newBullet);
                 }
             }
 
-            // Update kogels
-            for (int i = bullets.Count - 1; i >= 0; i--)
+            // Update spelerkogels
+            for (int i = playerBullets.Count - 1; i >= 0; i--)
             {
-                bullets[i].Update(gameTime);
-                if (!bullets[i].IsActive)
+                playerBullets[i].Update(gameTime);
+                if (!playerBullets[i].IsActive)
                 {
-                    bullets.RemoveAt(i);
+                    playerBullets.RemoveAt(i);
                 }
             }
 
@@ -134,6 +143,28 @@ namespace myGame
 
             // Update coins
             coinManager.Update(gameTime, rocket.Bounds, backgroundPositionY, rocket.Position.Y);
+
+            // Update vijanden
+            enemyManager.Update(gameTime, rocket.Bounds, playerBullets, () => currentLives--);
+
+            // Controleer of het spel voorbij is
+            if (currentLives <= 0)
+            {
+                GameManager.Instance.IsGameStarted = false;
+                // komt nog
+            }
+
+            // Controleer op level progressie
+            if (coinCollector.TotalCoins >= 20 && currentLevel != 3)
+            {
+                currentLevel = 3;
+                // Schakel naar Level 3 logica (Boss)
+            }
+            else if (coinCollector.TotalCoins >= 10 && currentLevel != 2)
+            {
+                currentLevel = 2;
+                // Schakel naar Level 2 logica (meteor)
+            }
 
             base.Update(gameTime);
         }
@@ -176,14 +207,17 @@ namespace myGame
                     rocket.Draw(_spriteBatch);
                     coinManager.Draw(_spriteBatch);
 
-                    // Kogels tekenen
-                    foreach (var bullet in bullets)
+                    // Spelerkogels tekenen
+                    foreach (var bullet in playerBullets)
                     {
                         bullet.Draw(_spriteBatch);
                     }
 
+                    // Vijanden tekenen
+                    enemyManager.Draw(_spriteBatch);
+
                     // Hartjes tekenen
-                    for (int i = 0; i < MaxLives; i++)
+                    for (int i = 0; i < currentLives; i++)
                     {
                         _spriteBatch.Draw(
                             heartTexture,
@@ -206,6 +240,16 @@ namespace myGame
                         10
                     );
                     _spriteBatch.DrawString(font, coinText, textPosition, Color.Yellow);
+
+                    // Huidige level tonen
+                    string levelText = $"Level: {currentLevel}";
+                    Vector2 levelTextSize = font.MeasureString(levelText);
+                    _spriteBatch.DrawString(
+                        font,
+                        levelText,
+                        new Vector2(20, 60),
+                        Color.White
+                    );
                 }
             }
 
