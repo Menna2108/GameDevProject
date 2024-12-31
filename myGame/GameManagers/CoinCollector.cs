@@ -15,5 +15,9 @@ namespace myGame.GameManagers
         {
             TotalCoins++;
         }
+        public void Reset()
+        {
+            TotalCoins = 0;
+        }
     }
 }

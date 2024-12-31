@@ -4,6 +4,7 @@ using Microsoft.Xna.Framework.Input;
 using myGame.GameEntities;
 using myGame.GameManagers;
 using myGame.GameScreens;
+using MyGame.GameScreens;
 using System;
 using System.Collections.Generic;
 
@@ -22,6 +23,7 @@ namespace myGame
 
         private StartScreen startScreen;
         private PausePlayScreen pausePlayScreen;
+        private GameOverScreen gameOverScreen;
         private Rocket rocket;
 
         private CoinManager coinManager;
@@ -71,6 +73,8 @@ namespace myGame
 
             startScreen = new StartScreen(Content);
             pausePlayScreen = new PausePlayScreen(Content);
+            gameOverScreen = new GameOverScreen(Content);
+            gameOverScreen.Initialize(GraphicsDevice);
 
             Texture2D rocketTexture = Content.Load<Texture2D>("RocketSprite");
             rocket = new Rocket(rocketTexture, rocketBulletTexture, new Vector2(950, 850));
@@ -95,6 +99,22 @@ namespace myGame
             {
                 startScreen.Update(mouseState, ref isGameStarted, this);
                 GameManager.Instance.IsGameStarted = isGameStarted;
+                return;
+            }
+
+            if (currentLives <= 0)
+            {
+                gameOverScreen.Update(mouseState, out bool startNewGame, out bool exitGame);
+
+                if (startNewGame)
+                {
+                    RestartGame();
+                    GameManager.Instance.IsGameStarted = true;
+                }
+                else if (exitGame)
+                {
+                    Exit();
+                }
                 return;
             }
 
@@ -147,23 +167,16 @@ namespace myGame
             // Update vijanden
             enemyManager.Update(gameTime, rocket.Bounds, playerBullets, () => currentLives--);
 
-            // Controleer of het spel voorbij is
-            if (currentLives <= 0)
-            {
-                GameManager.Instance.IsGameStarted = false;
-                // komt nog
-            }
-
-            // Controleer op level progressie
-            if (coinCollector.TotalCoins >= 20 && currentLevel != 3)
-            {
-                currentLevel = 3;
-                // Schakel naar Level 3 logica (Boss)
-            }
-            else if (coinCollector.TotalCoins >= 10 && currentLevel != 2)
+            // Controleren op level progressie
+            if (coinCollector.TotalCoins >= 10 && currentLevel != 2)
             {
                 currentLevel = 2;
                 // Schakel naar Level 2 logica (meteor)
+            }
+            else if (coinCollector.TotalCoins >= 20 && currentLevel != 3)
+            {
+                currentLevel = 3;
+                // Schakel naar Level 3 logica (Boss)
             }
 
             base.Update(gameTime);
@@ -186,6 +199,10 @@ namespace myGame
             if (!GameManager.Instance.IsGameStarted)
             {
                 startScreen.Draw(_spriteBatch);
+            }
+            else if (currentLives <= 0)
+            {
+                gameOverScreen.Draw(_spriteBatch);
             }
             else
             {
@@ -256,6 +273,17 @@ namespace myGame
             _spriteBatch.End();
 
             base.Draw(gameTime);
+        }
+
+        private void RestartGame()
+        {
+            currentLives = MaxLives;
+            currentLevel = 1;
+            coinCollector.Reset();
+            coinManager.GenerateRandomCoins(5, GraphicsDevice.Viewport.Bounds, rocket.Position.Y);
+            enemyManager.Reset();
+            rocket.Reset(new Vector2(950, 850));
+            playerBullets.Clear();
         }
     }
 }

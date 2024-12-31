@@ -84,6 +84,11 @@ namespace myGame.GameManagers
             Vector2 startPosition = new Vector2(Random.Shared.Next(50, 1850), -50);
             enemies.Add(new RocketEnemy(rocketEnemyTexture, rocketBulletTexture, startPosition, 2f, 0.15f));
         }
+        public void Reset()
+        {
+            enemies.Clear();
+            spawnTimer = 0; // Spawn timer opnieuw starten
+        }
     }
 }
 

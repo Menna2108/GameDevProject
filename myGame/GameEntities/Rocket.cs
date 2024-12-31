@@ -93,5 +93,10 @@ namespace myGame.GameEntities
                 0f
             );
         }
+        public void Reset(Vector2 startPosition)
+        {
+            position = startPosition;
+            shootTimer = 0; // Schiet-timer resetten
+        }
     }
 }
