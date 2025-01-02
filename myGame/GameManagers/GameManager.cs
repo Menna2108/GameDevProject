@@ -13,13 +13,15 @@ namespace myGame.GameManagers
 
         public bool IsGameStarted { get; set; } = false;
         public bool IsPaused { get; set; } = false;
-        public bool IsExiting { get; set; } = false; 
+        public bool IsExiting { get; set; } = false;
+        public bool IsGameOver { get; set; } = false; 
 
         private GameManager()
         {
             IsGameStarted = false;
             IsPaused = false;
             IsExiting = false;
+            IsGameOver = false;
         } // Singleton: private constructor
     }
 }

@@ -10,7 +10,7 @@ namespace myGame.GameComponents
         private float speed = 10f;
         private float scale = 0.1f;
 
-        public bool IsActive { get; private set; } = true;
+        public bool IsActive { get; set; } = true;
 
         public Rectangle Bounds => new Rectangle(
             (int)position.X,

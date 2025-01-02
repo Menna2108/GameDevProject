@@ -11,27 +11,34 @@ namespace myGame.GameManagers
     {
         private List<EnemyBase> enemies;
         private Texture2D rocketEnemyTexture;
-        private Texture2D rocketBulletTexture;
-        private int spawnCooldown = 2;
         private float spawnTimer;
+        private float spawnCooldown = 1f;
+        private int enemiesToSpawn = 1; 
+        private float enemySpeedIncrement = 0.05f; 
+        private float currentEnemySpeed = 2f; 
+        private int maxEnemiesInLevel1 = 50; 
 
-        public EnemyManager(Texture2D rocketEnemyTexture, Texture2D rocketBulletTexture)
+        public EnemyManager(Texture2D rocketEnemyTexture)
         {
             this.rocketEnemyTexture = rocketEnemyTexture;
-            this.rocketBulletTexture = rocketBulletTexture;
             enemies = new List<EnemyBase>();
         }
 
-
-        public void Update(GameTime gameTime, Rectangle playerBounds, List<Bullet> playerBullets, Action onPlayerHit)
+        public void Update(GameTime gameTime, Rocket playerRocket, List<Bullet> playerBullets)
         {
             spawnTimer -= (float)gameTime.ElapsedGameTime.TotalSeconds;
 
-            // Spawn nieuwe vijanden
+            // Spawn vijanden
             if (spawnTimer <= 0)
             {
                 spawnTimer = spawnCooldown;
-                SpawnRocketEnemy();
+
+                for (int i = 0; i < enemiesToSpawn; i++)
+                {
+                    SpawnRocketEnemy();
+                }
+
+                IncreaseEnemySpeed();
             }
 
             // Update vijanden
@@ -45,29 +52,29 @@ namespace myGame.GameManagers
                     continue;
                 }
 
-                // Logica voor vijandelijke kogels
+                // Controleer of de vijand de speler heeft geraakt
                 if (enemies[i] is RocketEnemy rocketEnemy)
                 {
-                    foreach (var bulletPosition in rocketEnemy.GetBullets())
+                    if (rocketEnemy.CheckPlayerHit(playerRocket.Bounds))
                     {
-                        if (playerBounds.Contains(bulletPosition.ToPoint()))
+                        // Verlies een hart bij botsing
+                        if (playerRocket.Health > 0)
                         {
-                            if (rocketEnemy.ProcessPlayerHit())
-                            {
-                                onPlayerHit();
-                            }
+                            playerRocket.Health--;
                         }
+
+                        // Stop de vijand na de botsing
+                        enemies[i].IsActive = false;
                     }
                 }
 
-                // Controle op botsing met spelerkogels
-                for (int j = playerBullets.Count - 1; j >= 0; j--)
+                // Controleer of kogels de vijand raken
+                foreach (var bullet in playerBullets)
                 {
-                    if (enemies[i].Bounds.Intersects(playerBullets[j].Bounds))
+                    if (bullet.Bounds.Intersects(enemies[i].Bounds))
                     {
-                        enemies.RemoveAt(i);
-                        playerBullets.RemoveAt(j);
-                        break;
+                        enemies[i].IsActive = false;  
+                        bullet.IsActive = false;      
                     }
                 }
             }
@@ -84,14 +91,27 @@ namespace myGame.GameManagers
         private void SpawnRocketEnemy()
         {
             Vector2 startPosition = new Vector2(Random.Shared.Next(50, 1850), -50);
-            float scale = 0.15f; 
-            enemies.Add(new RocketEnemy(rocketEnemyTexture, startPosition, 2f, scale));
+            float scale = 0.15f;
+            enemies.Add(new RocketEnemy(rocketEnemyTexture, startPosition, currentEnemySpeed, scale));
+        }
+
+        private void IncreaseEnemySpeed()
+        {
+            currentEnemySpeed += enemySpeedIncrement;
         }
 
         public void Reset()
         {
             enemies.Clear();
-            spawnTimer = 0; 
+            spawnTimer = 0;
+            currentEnemySpeed = 2f; 
+        }
+
+        public List<EnemyBase> GetEnemies()
+        {
+            return enemies;
         }
     }
+
+
 }

@@ -3,6 +3,7 @@ using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using myGame.GameComponents;
+using myGame.GameManagers;
 using System;
 
 namespace myGame.GameEntities
@@ -17,6 +18,8 @@ namespace myGame.GameEntities
         private Texture2D bulletTexture;
         private float shootCooldown = 0.5f;
         private float shootTimer = 0f;
+        public int Health { get; set; }
+
 
         public bool CanShoot => shootTimer <= 0;
 
@@ -94,10 +97,21 @@ namespace myGame.GameEntities
                 0f
             );
         }
+
         public void Reset(Vector2 startPosition)
         {
             position = startPosition;
-            shootTimer = 0; // Schiet-timer resetten
+            shootTimer = 0;
         }
+        public void LoseHealth()
+{
+    Health--;
+    if (Health <= 0)
+    {
+        GameManager.Instance.IsGameOver = true;
     }
+}
+
+    }
+
 }

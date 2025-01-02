@@ -1,10 +1,6 @@
-﻿using Microsoft.Xna.Framework.Graphics;
-using Microsoft.Xna.Framework;
+﻿using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace myGame.GameEntities
 {
@@ -15,7 +11,8 @@ namespace myGame.GameEntities
         protected float speed;
         protected float scale;
 
-        public bool IsActive { get; protected set; } = true;
+        // Voeg een set toe zodat de waarde van IsActive kan worden gewijzigd
+        public bool IsActive { get; set; } = true;
 
         public Rectangle Bounds => new Rectangle(
             (int)position.X,

@@ -6,6 +6,7 @@ using myGame.GameEntities;
 using myGame.GameManagers;
 using MyGame.GameScreens;
 using System.Collections.Generic;
+using System.Runtime.InteropServices.ObjectiveC;
 
 namespace myGame
 {
@@ -30,6 +31,7 @@ namespace myGame
 
         private SpriteFont font;
 
+        private int playerHitCount = 0;
         private float backgroundPositionY = 0;
         private float backgroundSpeed = 2f;
 
@@ -49,16 +51,6 @@ namespace myGame
             IsMouseVisible = true;
         }
 
-        protected override void Initialize()
-        {
-            _graphics.PreferredBackBufferWidth = 1900;
-            _graphics.PreferredBackBufferHeight = 950;
-            _graphics.ApplyChanges();
-            playerBullets = new List<Bullet>();
-
-            base.Initialize();
-        }
-
         protected override void LoadContent()
         {
             _spriteBatch = new SpriteBatch(GraphicsDevice);
@@ -70,7 +62,7 @@ namespace myGame
             rocketBulletTexture = Content.Load<Texture2D>("bullet");
             font = Content.Load<SpriteFont>("Fonts/coinFont");
 
-            startScreen = new StartScreen(Content);
+            startScreen = new StartScreen(Content); 
             pausePlayScreen = new PausePlayScreen(Content);
             gameOverScreen = new GameOverScreen(Content);
             gameOverScreen.Initialize(GraphicsDevice);
@@ -85,7 +77,17 @@ namespace myGame
             coinManager.GenerateRandomCoins(5, GraphicsDevice.Viewport.Bounds, rocket.Position.Y);
 
             // EnemyManager
-            enemyManager = new EnemyManager(rocketEnemyTexture, rocketBulletTexture);
+            enemyManager = new EnemyManager(rocketEnemyTexture);
+        }
+
+        protected override void Initialize()
+        {
+            _graphics.PreferredBackBufferWidth = 1900;
+            _graphics.PreferredBackBufferHeight = 950;
+            _graphics.ApplyChanges();
+            playerBullets = new List<Bullet>();
+
+            base.Initialize();
         }
 
         protected override void Update(GameTime gameTime)
@@ -97,11 +99,15 @@ namespace myGame
             {
                 startScreen.Update(mouseState, this);
                 GameManager.Instance.IsGameStarted = startScreen.IsGameStarted;
+                if (GameManager.Instance.IsGameStarted)
+                {
+                    RestartGame();
+                }
                 return;
             }
 
             // Game Over-scherm
-            if (currentLives <= 0)
+            if (rocket.Health <= 0 || GameManager.Instance.IsGameOver)
             {
                 gameOverScreen.Update(mouseState, out bool startNewGame, out bool exitGame);
 
@@ -109,6 +115,7 @@ namespace myGame
                 {
                     RestartGame();
                     GameManager.Instance.IsGameStarted = true;
+                    GameManager.Instance.IsGameOver = false;  // Reset Game Over status
                 }
                 else if (exitGame)
                 {
@@ -127,9 +134,8 @@ namespace myGame
                 return;
             }
 
-            // Spelupdate
+            // Update spel als het niet gepauzeerd is
             var keyboardState = Keyboard.GetState();
-
             rocket.Update(gameTime, keyboardState);
 
             if (keyboardState.IsKeyDown(Keys.Space))
@@ -140,6 +146,7 @@ namespace myGame
                     playerBullets.Add(newBullet);
                 }
             }
+
 
             // Update spelerkogels
             for (int i = playerBullets.Count - 1; i >= 0; i--)
@@ -167,7 +174,7 @@ namespace myGame
             coinManager.Update(gameTime, rocket.Bounds, backgroundPositionY, rocket.Position.Y);
 
             // Update vijanden
-            enemyManager.Update(gameTime, rocket.Bounds, playerBullets, () => currentLives--);
+            enemyManager.Update(gameTime, rocket, playerBullets);
 
             // Controleer op level progressie
             if (coinCollector.TotalCoins >= 10 && currentLevel != 2)
@@ -179,6 +186,23 @@ namespace myGame
             {
                 currentLevel = 3;
                 // Schakel naar Level 3 logica
+            }
+
+            // Controleer of de speler geraakt is door vijandelijke raketten
+            foreach (var enemy in enemyManager.GetEnemies())
+            {
+                if (enemy is RocketEnemy rocketEnemy && rocketEnemy.CheckPlayerHit(rocket.Bounds))
+                {
+                    playerHitCount++;  // Verhoog de botsingsteller
+
+                    if (playerHitCount >= 3)
+                    {
+                        // Verlies 1 hart na 3 botsingen
+                        rocket.LoseHealth(); // Verlaag de gezondheid van de raket
+                        currentLives--;  // Verlaag het aantal levens
+                        playerHitCount = 0;  // Reset de botsingsteller na verlies van een hart
+                    }
+                }
             }
 
             base.Update(gameTime);
@@ -202,7 +226,7 @@ namespace myGame
             {
                 startScreen.Draw(_spriteBatch);
             }
-            else if (currentLives <= 0)
+            else if (rocket.Health <= 0 || GameManager.Instance.IsGameOver)
             {
                 gameOverScreen.Draw(_spriteBatch);
             }
@@ -233,7 +257,7 @@ namespace myGame
                     enemyManager.Draw(_spriteBatch);
 
                     // Hartjes tekenen
-                    for (int i = 0; i < currentLives; i++)
+                    for (int i = 0; i < rocket.Health; i++)
                     {
                         _spriteBatch.Draw(
                             heartTexture,
@@ -263,13 +287,21 @@ namespace myGame
 
         private void RestartGame()
         {
+            // Reset de levens van de raket en andere game-instellingen
+            rocket.Reset(new Vector2(950, 850));
+            rocket.Health = MaxLives; // Zet de gezondheid van de raket terug naar MaxLives
+
             currentLives = MaxLives;
             currentLevel = 1;
             coinCollector.Reset();
             coinManager.GenerateRandomCoins(5, GraphicsDevice.Viewport.Bounds, rocket.Position.Y);
             enemyManager.Reset();
-            rocket.Reset(new Vector2(950, 850));
             playerBullets.Clear();
+
+            GameManager.Instance.IsGameStarted = true;   // Dit zou alleen moeten gebeuren als het spel echt gestart is
+            GameManager.Instance.IsGameOver = false;     // GameOver-reset hier om te voorkomen dat het GameOver-scherm verschijnt
+            GameManager.Instance.IsPaused = false;       // Pauzeerstatus resetten (optioneel)
         }
+
     }
 }
