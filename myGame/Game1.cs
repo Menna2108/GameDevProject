@@ -4,7 +4,6 @@ using Microsoft.Xna.Framework.Input;
 using myGame.GameComponents;
 using myGame.GameEntities;
 using myGame.GameManagers;
-using myGame.GameScreens;
 using MyGame.GameScreens;
 using System.Collections.Generic;
 
@@ -252,7 +251,7 @@ namespace myGame
                     // Coins en level tonen
                     string coinText = $"Coins: {coinCollector.TotalCoins}";
                     string levelText = $"Level: {currentLevel}";
-                    _spriteBatch.DrawString(font, coinText, new Vector2(20, 20), Color.Yellow);
+                    _spriteBatch.DrawString(font, coinText, new Vector2(950, 15), Color.Yellow);
                     _spriteBatch.DrawString(font, levelText, new Vector2(20, 60), Color.White);
                 }
             }
