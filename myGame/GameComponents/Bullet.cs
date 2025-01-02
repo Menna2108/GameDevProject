@@ -1,7 +1,7 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 
-namespace myGame.GameEntities
+namespace myGame.GameComponents
 {
     public class Bullet
     {
@@ -15,8 +15,8 @@ namespace myGame.GameEntities
         public Rectangle Bounds => new Rectangle(
             (int)position.X,
             (int)position.Y,
-            texture.Width,
-            texture.Height
+            (int)(texture.Width * scale),
+            (int)(texture.Height * scale)
         );
 
         public Bullet(Texture2D texture, Vector2 startPosition)

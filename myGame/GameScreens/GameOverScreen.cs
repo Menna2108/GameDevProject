@@ -27,7 +27,7 @@ namespace MyGame.GameScreens
         {
             newGameButtonTexture = content.Load<Texture2D>("restart");
             exitButtonTexture = content.Load<Texture2D>("exit");
-            gameOverTexture = content.Load<Texture2D>("gameover"); 
+            gameOverTexture = content.Load<Texture2D>("gameover");
         }
 
         public void Initialize(GraphicsDevice graphicsDevice)
@@ -39,18 +39,18 @@ namespace MyGame.GameScreens
             int buttonHeight = (int)(newGameButtonTexture.Height * 0.8f);
 
             newGameButtonPosition = new Vector2(
-                (screenWidth / 2) - (buttonWidth / 2) - 100, 
+                (screenWidth / 2) - (buttonWidth / 2) - 100,
                 screenHeight / 2
             );
 
             exitButtonPosition = new Vector2(
-                (screenWidth / 2) + (buttonWidth / 2) + 100, 
+                (screenWidth / 2) + (buttonWidth / 2) + 100,
                 screenHeight / 2
             );
 
             gameOverPosition = new Vector2(
                 (screenWidth - gameOverTexture.Width) / 2,
-                (screenHeight / 2) - gameOverTexture.Height - 50 
+                (screenHeight / 2) - gameOverTexture.Height - 50
             );
         }
 

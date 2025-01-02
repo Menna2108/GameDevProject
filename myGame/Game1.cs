@@ -1,11 +1,11 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
+using myGame.GameComponents;
 using myGame.GameEntities;
 using myGame.GameManagers;
 using myGame.GameScreens;
 using MyGame.GameScreens;
-using System;
 using System.Collections.Generic;
 
 namespace myGame
@@ -93,15 +93,15 @@ namespace myGame
         {
             var mouseState = Mouse.GetState();
 
-            bool isGameStarted = GameManager.Instance.IsGameStarted;
-
-            if (!isGameStarted)
+            // Startscherm
+            if (!GameManager.Instance.IsGameStarted)
             {
-                startScreen.Update(mouseState, ref isGameStarted, this);
-                GameManager.Instance.IsGameStarted = isGameStarted;
+                startScreen.Update(mouseState, this);
+                GameManager.Instance.IsGameStarted = startScreen.IsGameStarted;
                 return;
             }
 
+            // Game Over-scherm
             if (currentLives <= 0)
             {
                 gameOverScreen.Update(mouseState, out bool startNewGame, out bool exitGame);
@@ -118,6 +118,7 @@ namespace myGame
                 return;
             }
 
+            // Pauzescherm
             bool isPaused = GameManager.Instance.IsPaused;
             pausePlayScreen.Update(mouseState, ref isPaused);
             GameManager.Instance.IsPaused = isPaused;
@@ -127,6 +128,7 @@ namespace myGame
                 return;
             }
 
+            // Spelupdate
             var keyboardState = Keyboard.GetState();
 
             rocket.Update(gameTime, keyboardState);
@@ -150,6 +152,7 @@ namespace myGame
                 }
             }
 
+            // Achtergrond scrollen
             if (keyboardState.IsKeyDown(Keys.Up))
             {
                 backgroundPositionY += backgroundSpeed * 1.5f;
@@ -167,16 +170,16 @@ namespace myGame
             // Update vijanden
             enemyManager.Update(gameTime, rocket.Bounds, playerBullets, () => currentLives--);
 
-            // Controleren op level progressie
+            // Controleer op level progressie
             if (coinCollector.TotalCoins >= 10 && currentLevel != 2)
             {
                 currentLevel = 2;
-                // Schakel naar Level 2 logica (meteor)
+                // Schakel naar Level 2 logica
             }
             else if (coinCollector.TotalCoins >= 20 && currentLevel != 3)
             {
                 currentLevel = 3;
-                // Schakel naar Level 3 logica (Boss)
+                // Schakel naar Level 3 logica
             }
 
             base.Update(gameTime);
@@ -206,7 +209,6 @@ namespace myGame
             }
             else
             {
-                // Pauzescherm en pauzetekst
                 pausePlayScreen.Draw(_spriteBatch);
 
                 if (GameManager.Instance.IsPaused)
@@ -224,13 +226,11 @@ namespace myGame
                     rocket.Draw(_spriteBatch);
                     coinManager.Draw(_spriteBatch);
 
-                    // Spelerkogels tekenen
                     foreach (var bullet in playerBullets)
                     {
                         bullet.Draw(_spriteBatch);
                     }
 
-                    // Vijanden tekenen
                     enemyManager.Draw(_spriteBatch);
 
                     // Hartjes tekenen
@@ -249,24 +249,11 @@ namespace myGame
                         );
                     }
 
-                    // Verzamelde coins tonen
+                    // Coins en level tonen
                     string coinText = $"Coins: {coinCollector.TotalCoins}";
-                    Vector2 textSize = font.MeasureString(coinText);
-                    Vector2 textPosition = new Vector2(
-                        (_graphics.PreferredBackBufferWidth / 2) - (textSize.X / 2),
-                        10
-                    );
-                    _spriteBatch.DrawString(font, coinText, textPosition, Color.Yellow);
-
-                    // Huidige level tonen
                     string levelText = $"Level: {currentLevel}";
-                    Vector2 levelTextSize = font.MeasureString(levelText);
-                    _spriteBatch.DrawString(
-                        font,
-                        levelText,
-                        new Vector2(20, 60),
-                        Color.White
-                    );
+                    _spriteBatch.DrawString(font, coinText, new Vector2(20, 20), Color.Yellow);
+                    _spriteBatch.DrawString(font, levelText, new Vector2(20, 60), Color.White);
                 }
             }
 

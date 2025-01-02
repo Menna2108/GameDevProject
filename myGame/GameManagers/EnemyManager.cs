@@ -3,9 +3,7 @@ using Microsoft.Xna.Framework;
 using myGame.GameEntities;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using myGame.GameComponents;
 
 namespace myGame.GameManagers
 {
@@ -24,16 +22,19 @@ namespace myGame.GameManagers
             enemies = new List<EnemyBase>();
         }
 
+
         public void Update(GameTime gameTime, Rectangle playerBounds, List<Bullet> playerBullets, Action onPlayerHit)
         {
             spawnTimer -= (float)gameTime.ElapsedGameTime.TotalSeconds;
 
+            // Spawn nieuwe vijanden
             if (spawnTimer <= 0)
             {
                 spawnTimer = spawnCooldown;
                 SpawnRocketEnemy();
             }
 
+            // Update vijanden
             for (int i = enemies.Count - 1; i >= 0; i--)
             {
                 enemies[i].Update(gameTime);
@@ -44,13 +45,13 @@ namespace myGame.GameManagers
                     continue;
                 }
 
+                // Logica voor vijandelijke kogels
                 if (enemies[i] is RocketEnemy rocketEnemy)
                 {
-                    foreach (var enemyBullet in rocketEnemy.GetBullets())
+                    foreach (var bulletPosition in rocketEnemy.GetBullets())
                     {
-                        if (playerBounds.Intersects(enemyBullet.Bounds))
+                        if (playerBounds.Contains(bulletPosition.ToPoint()))
                         {
-                            enemyBullet.Deactivate();
                             if (rocketEnemy.ProcessPlayerHit())
                             {
                                 onPlayerHit();
@@ -59,6 +60,7 @@ namespace myGame.GameManagers
                     }
                 }
 
+                // Controle op botsing met spelerkogels
                 for (int j = playerBullets.Count - 1; j >= 0; j--)
                 {
                     if (enemies[i].Bounds.Intersects(playerBullets[j].Bounds))
@@ -82,13 +84,14 @@ namespace myGame.GameManagers
         private void SpawnRocketEnemy()
         {
             Vector2 startPosition = new Vector2(Random.Shared.Next(50, 1850), -50);
-            enemies.Add(new RocketEnemy(rocketEnemyTexture, rocketBulletTexture, startPosition, 2f, 0.15f));
+            float scale = 0.15f; 
+            enemies.Add(new RocketEnemy(rocketEnemyTexture, startPosition, 2f, scale));
         }
+
         public void Reset()
         {
             enemies.Clear();
-            spawnTimer = 0; // Spawn timer opnieuw starten
+            spawnTimer = 0; 
         }
     }
 }
-

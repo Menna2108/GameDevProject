@@ -1,26 +1,20 @@
-﻿using Microsoft.Xna.Framework.Graphics;
-using Microsoft.Xna.Framework;
-using System;
+﻿using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace myGame.GameEntities
 {
     public class RocketEnemy : EnemyBase
     {
-        private Texture2D bulletTexture;
-        private List<Bullet> bullets;
-        private float shootCooldown = 2f;
+        private List<Vector2> bullets;
+        private float shootCooldown = 1.5f; // Snellere schietsnelheid
         private float shootTimer;
         private int playerHitCount = 0;
 
-        public RocketEnemy(Texture2D texture, Texture2D bulletTexture, Vector2 startPosition, float speed, float scale)
+        public RocketEnemy(Texture2D texture, Vector2 startPosition, float speed, float scale)
             : base(texture, startPosition, speed, scale)
         {
-            this.bulletTexture = bulletTexture;
-            bullets = new List<Bullet>();
+            bullets = new List<Vector2>();
             shootTimer = shootCooldown;
         }
 
@@ -36,24 +30,26 @@ namespace myGame.GameEntities
             if (shootTimer <= 0)
             {
                 shootTimer = shootCooldown;
-                Vector2 bulletStartPosition = new Vector2(
-                    position.X + (texture.Width * scale) / 2 - 5,
+
+                // Puntje (coördinaat) toevoegen
+                Vector2 bulletPosition = new Vector2(
+                    position.X + (texture.Width * scale) / 2,
                     position.Y + (texture.Height * scale)
                 );
-                bullets.Add(new Bullet(bulletTexture, bulletStartPosition));
+                bullets.Add(bulletPosition);
             }
 
-            // Update kogels
+            // Update puntjes
             for (int i = bullets.Count - 1; i >= 0; i--)
             {
-                bullets[i].Update(gameTime);
-                if (!bullets[i].IsActive)
+                bullets[i] = new Vector2(bullets[i].X, bullets[i].Y + 5f); // Bewegen naar beneden
+                if (bullets[i].Y > 950) // Buiten scherm
                 {
                     bullets.RemoveAt(i);
                 }
             }
 
-            // Verwijderen als buiten scherm
+            // Verwijderen als vijand buiten scherm
             if (position.Y > 950)
             {
                 IsActive = false;
@@ -64,13 +60,24 @@ namespace myGame.GameEntities
         {
             base.Draw(spriteBatch);
 
+            // Teken de puntjes
             foreach (var bullet in bullets)
             {
-                bullet.Draw(spriteBatch);
+                spriteBatch.Draw(
+                    texture: null,
+                    position: bullet,
+                    sourceRectangle: null,
+                    color: Color.Red,
+                    rotation: 0f,
+                    origin: Vector2.Zero,
+                    scale: new Vector2(3f, 3f), // Maak het punt klein
+                    effects: SpriteEffects.None,
+                    layerDepth: 0f
+                );
             }
         }
 
-        public List<Bullet> GetBullets() => bullets;
+        public List<Vector2> GetBullets() => bullets;
 
         public bool ProcessPlayerHit()
         {
@@ -83,5 +90,4 @@ namespace myGame.GameEntities
             return false;
         }
     }
-    
 }

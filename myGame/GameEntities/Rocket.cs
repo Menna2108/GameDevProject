@@ -2,6 +2,7 @@
 using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
+using myGame.GameComponents;
 using System;
 
 namespace myGame.GameEntities
@@ -73,7 +74,7 @@ namespace myGame.GameEntities
                     position.Y - (bulletTexture.Height * 0.1f)
                 );
 
-                return new Bullet(bulletTexture, bulletStartPosition); 
+                return new Bullet(bulletTexture, bulletStartPosition);
             }
 
             return null;

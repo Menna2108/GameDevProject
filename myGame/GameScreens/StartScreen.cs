@@ -17,6 +17,8 @@ namespace myGame.GameScreens
 
         private const float ExitScalingFactor = 0.5f;
 
+        public bool IsGameStarted { get; private set; } = false;
+
         public StartScreen(Microsoft.Xna.Framework.Content.ContentManager content)
         {
             startButtonTexture = content.Load<Texture2D>("start");
@@ -27,7 +29,7 @@ namespace myGame.GameScreens
             exitButtonPosition = new Vector2(875, 600);
         }
 
-        public void Update(MouseState mouseState, ref bool isGameStarted, Game game)
+        public void Update(MouseState mouseState, Game game)
         {
             if (isGrowing)
             {
@@ -67,7 +69,7 @@ namespace myGame.GameScreens
             {
                 if (startButtonBounds.Contains(mouseState.Position))
                 {
-                    isGameStarted = true;
+                    IsGameStarted = true;
                 }
                 else if (exitButtonBounds.Contains(mouseState.Position))
                 {

@@ -19,7 +19,7 @@ namespace myGame.GameEntities
 
         public override void Update(GameTime gameTime)
         {
-            // blijf
+            
         }
 
         public bool TakeDamage()
