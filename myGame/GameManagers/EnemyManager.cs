@@ -111,6 +111,11 @@ namespace myGame.GameManagers
         {
             return enemies;
         }
+        public void RemoveRocketEnemies()
+        {
+            enemies.RemoveAll(e => e is RocketEnemy);
+        }
+
     }
 
 

@@ -5,8 +5,8 @@ using myGame.GameComponents;
 using myGame.GameEntities;
 using myGame.GameManagers;
 using MyGame.GameScreens;
+using System;
 using System.Collections.Generic;
-using System.Runtime.InteropServices.ObjectiveC;
 
 namespace myGame
 {
@@ -20,6 +20,7 @@ namespace myGame
         private Texture2D coinTexture;
         private Texture2D rocketEnemyTexture;
         private Texture2D rocketBulletTexture;
+        private Texture2D meteorTexture;
 
         private StartScreen startScreen;
         private PausePlayScreen pausePlayScreen;
@@ -28,6 +29,7 @@ namespace myGame
 
         private CoinManager coinManager;
         private EnemyManager enemyManager;
+        private MeteorManager meteorManager;
 
         private SpriteFont font;
 
@@ -43,6 +45,12 @@ namespace myGame
         private List<Bullet> playerBullets;
 
         private CoinCollector coinCollector;
+
+        private bool hasCollidedWithEnemy = false;
+
+        private bool isLevelUpVisible = false;
+        private float levelUpTimer = 0f;
+        private const float levelUpDisplayDuration = 3f;
 
         public Game1()
         {
@@ -62,7 +70,7 @@ namespace myGame
             rocketBulletTexture = Content.Load<Texture2D>("bullet");
             font = Content.Load<SpriteFont>("Fonts/coinFont");
 
-            startScreen = new StartScreen(Content); 
+            startScreen = new StartScreen(Content);
             pausePlayScreen = new PausePlayScreen(Content);
             gameOverScreen = new GameOverScreen(Content);
             gameOverScreen.Initialize(GraphicsDevice);
@@ -76,8 +84,13 @@ namespace myGame
             coinManager.AddObserver(coinCollector);
             coinManager.GenerateRandomCoins(5, GraphicsDevice.Viewport.Bounds, rocket.Position.Y);
 
-            // EnemyManager
+            // Vijand raketten
+            rocketEnemyTexture = Content.Load<Texture2D>("Enemy1");
             enemyManager = new EnemyManager(rocketEnemyTexture);
+
+            // Meteoor
+            meteorTexture = Content.Load<Texture2D>("meteor");
+            meteorManager = new MeteorManager(meteorTexture);
         }
 
         protected override void Initialize()
@@ -88,6 +101,7 @@ namespace myGame
             playerBullets = new List<Bullet>();
 
             base.Initialize();
+            meteorManager.SetLevel(currentLevel, GraphicsDevice.Viewport.Bounds);
         }
 
         protected override void Update(GameTime gameTime)
@@ -115,7 +129,7 @@ namespace myGame
                 {
                     RestartGame();
                     GameManager.Instance.IsGameStarted = true;
-                    GameManager.Instance.IsGameOver = false;  // Reset Game Over status
+                    GameManager.Instance.IsGameOver = false;
                 }
                 else if (exitGame)
                 {
@@ -134,7 +148,7 @@ namespace myGame
                 return;
             }
 
-            // Update spel als het niet gepauzeerd is
+            // Update speler
             var keyboardState = Keyboard.GetState();
             rocket.Update(gameTime, keyboardState);
 
@@ -146,7 +160,6 @@ namespace myGame
                     playerBullets.Add(newBullet);
                 }
             }
-
 
             // Update spelerkogels
             for (int i = playerBullets.Count - 1; i >= 0; i--)
@@ -176,34 +189,51 @@ namespace myGame
             // Update vijanden
             enemyManager.Update(gameTime, rocket, playerBullets);
 
-            // Controleer op level progressie
-            if (coinCollector.TotalCoins >= 10 && currentLevel != 2)
+            // Controleer of de speler naar een nieuw niveau moet gaan
+            if (coinCollector.TotalCoins >= 5 && currentLevel == 1)
             {
                 currentLevel = 2;
-                // Schakel naar Level 2 logica
+                meteorManager.SetLevel(2, GraphicsDevice.Viewport.Bounds);  // Meteoren spawnen voor level 2
+                rocket.IncreaseSpeed(2f);  // Verhoog raketsnelheid
+                rocket.DecreaseShootCooldown(0.09f);
+                isLevelUpVisible = true;
+                levelUpTimer = 0f;
             }
-            else if (coinCollector.TotalCoins >= 20 && currentLevel != 3)
+            else if (coinCollector.TotalCoins >= 10 && currentLevel == 2)
             {
                 currentLevel = 3;
-                // Schakel naar Level 3 logica
+                meteorManager.SetLevel(3, GraphicsDevice.Viewport.Bounds);  // Verwijder meteoren in level 3
+                enemyManager.RemoveRocketEnemies();  // Verwijder raket vijanden in level 3
+                isLevelUpVisible = true;
+                levelUpTimer = 0f;
             }
 
             // Controleer of de speler geraakt is door vijandelijke raketten
             foreach (var enemy in enemyManager.GetEnemies())
             {
-                if (enemy is RocketEnemy rocketEnemy && rocketEnemy.CheckPlayerHit(rocket.Bounds))
+                if (enemy is RocketEnemy rocketEnemy && !hasCollidedWithEnemy)
                 {
-                    playerHitCount++;  // Verhoog de botsingsteller
-
-                    if (playerHitCount >= 3)
+                    if (rocketEnemy.CheckPlayerHit(rocket.Bounds))
                     {
-                        // Verlies 1 hart na 3 botsingen
-                        rocket.LoseHealth(); // Verlaag de gezondheid van de raket
-                        currentLives--;  // Verlaag het aantal levens
-                        playerHitCount = 0;  // Reset de botsingsteller na verlies van een hart
+                        playerHitCount++;  // Verhoog de botsingsteller
+
+                        if (playerHitCount >= 3)
+                        {
+                            rocket.LoseHealth();
+                            currentLives--;
+                            playerHitCount = 0;
+                        }
+
+                        // Stel de botsingservaring in
+                        hasCollidedWithEnemy = true;
                     }
                 }
             }
+
+            // Reset de botsingstatus na elke update
+            hasCollidedWithEnemy = false;
+            meteorManager.Update(gameTime, rocket, enemyManager.GetEnemies());
+
 
             base.Update(gameTime);
         }
@@ -255,6 +285,8 @@ namespace myGame
                     }
 
                     enemyManager.Draw(_spriteBatch);
+                    meteorManager.Draw(_spriteBatch);
+                    DrawLevelUpScreen(_spriteBatch, gameTime);
 
                     // Hartjes tekenen
                     for (int i = 0; i < rocket.Health; i++)
@@ -287,21 +319,51 @@ namespace myGame
 
         private void RestartGame()
         {
-            // Reset de levens van de raket en andere game-instellingen
             rocket.Reset(new Vector2(950, 850));
-            rocket.Health = MaxLives; // Zet de gezondheid van de raket terug naar MaxLives
+            rocket.Health = MaxLives;
 
             currentLives = MaxLives;
             currentLevel = 1;
             coinCollector.Reset();
             coinManager.GenerateRandomCoins(5, GraphicsDevice.Viewport.Bounds, rocket.Position.Y);
             enemyManager.Reset();
+            meteorManager.RestartMeteors(GraphicsDevice.Viewport.Bounds);
+            meteorManager.SetLevel(1, GraphicsDevice.Viewport.Bounds);
             playerBullets.Clear();
 
-            GameManager.Instance.IsGameStarted = true;   // Dit zou alleen moeten gebeuren als het spel echt gestart is
-            GameManager.Instance.IsGameOver = false;     // GameOver-reset hier om te voorkomen dat het GameOver-scherm verschijnt
-            GameManager.Instance.IsPaused = false;       // Pauzeerstatus resetten (optioneel)
+            GameManager.Instance.IsGameStarted = true;
+            GameManager.Instance.IsGameOver = false;
+            GameManager.Instance.IsPaused = false;
         }
 
+        private void DrawLevelUpScreen(SpriteBatch spriteBatch, GameTime gameTime)
+        {
+            if (isLevelUpVisible)
+            {
+                if (font != null) // Check if font is loaded
+                {
+                    string levelUpText = $"Level {currentLevel} - You leveled up!";
+                    Vector2 levelUpTextSize = font.MeasureString(levelUpText);
+                    Vector2 levelUpTextPosition = new Vector2(
+                        (_graphics.PreferredBackBufferWidth - levelUpTextSize.X) / 2,
+                        (_graphics.PreferredBackBufferHeight - levelUpTextSize.Y) / 2
+                    );
+                    spriteBatch.DrawString(font, levelUpText, levelUpTextPosition, Color.Green);
+
+                    // Update the level-up timer based on gameTime
+                    levelUpTimer += (float)gameTime.ElapsedGameTime.TotalSeconds;
+
+                    // Check if the timer exceeds the display duration
+                    if (levelUpTimer >= levelUpDisplayDuration)
+                    {
+                        isLevelUpVisible = false;
+                    }
+                }
+                else
+                {
+                    Console.WriteLine("Font not loaded correctly!");
+                }
+            }
+        }
     }
 }

@@ -5,6 +5,7 @@ using Microsoft.Xna.Framework.Input;
 using myGame.GameComponents;
 using myGame.GameManagers;
 using System;
+using System.Collections.Generic;
 
 namespace myGame.GameEntities
 {
@@ -19,8 +20,6 @@ namespace myGame.GameEntities
         private float shootCooldown = 0.5f;
         private float shootTimer = 0f;
         public int Health { get; set; }
-
-
         public bool CanShoot => shootTimer <= 0;
 
         public Vector2 Position => position;
@@ -104,13 +103,34 @@ namespace myGame.GameEntities
             shootTimer = 0;
         }
         public void LoseHealth()
-{
-    Health--;
-    if (Health <= 0)
-    {
-        GameManager.Instance.IsGameOver = true;
-    }
-}
+        {
+            Health--;
+            if (Health <= 0)
+            {
+                GameManager.Instance.IsGameOver = true;
+            }
+        }
+        public void CheckCollisionWithMeteors(List<MeteorEnemy> meteors)
+        {
+            foreach (var meteor in meteors)
+            {
+                if (Bounds.Intersects(meteor.Bounds)) // Controleer botsing tussen raket en meteor
+                {
+                    LoseHealth();
+                    meteor.IsActive = false;  // Zet de meteor op inactief
+                }
+            }
+        }
+        public void IncreaseSpeed(float increment)
+        {
+            speed += increment;
+        }
+
+        public void DecreaseShootCooldown(float decrement)
+        {
+            shootCooldown = Math.Max(0.1f, shootCooldown - decrement);  
+        }
+
 
     }
 

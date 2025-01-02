@@ -10,8 +10,6 @@ namespace myGame.GameEntities
         protected Vector2 position;
         protected float speed;
         protected float scale;
-
-        // Voeg een set toe zodat de waarde van IsActive kan worden gewijzigd
         public bool IsActive { get; set; } = true;
 
         public Rectangle Bounds => new Rectangle(
