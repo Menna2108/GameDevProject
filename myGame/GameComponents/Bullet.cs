@@ -7,8 +7,10 @@ namespace myGame.GameComponents
     {
         private Texture2D texture;
         private Vector2 position;
+        private Vector2 direction;
         private float speed = 10f;
         private float scale = 0.1f;
+        private bool isBossBullet;
 
         public bool IsActive { get; set; } = true;
 
@@ -19,20 +21,32 @@ namespace myGame.GameComponents
             (int)(texture.Height * scale)
         );
 
-        public Bullet(Texture2D texture, Vector2 startPosition)
+        public Bullet(Texture2D texture, Vector2 startPosition, bool isBossBullet = false)
         {
             this.texture = texture;
-            position = startPosition;
+            this.position = startPosition;
+            this.isBossBullet = isBossBullet;
+            // Standaard richting: omhoog voor speler, omlaag voor boss
+            this.direction = isBossBullet ? Vector2.UnitY : -Vector2.UnitY;
         }
+
+        public void SetDirection(Vector2 newDirection)
+        {
+            direction = newDirection;
+            direction.Normalize();
+        }
+
         public void Deactivate()
         {
             IsActive = false;
         }
+
         public void Update(GameTime gameTime)
         {
-            position.Y -= speed;
+            position += direction * speed;
 
-            if (position.Y < 0)
+            // Deactiveer de bullet als deze buiten het scherm gaat
+            if (position.Y < -50 || position.Y > 1000)
                 IsActive = false;
         }
 
@@ -40,11 +54,14 @@ namespace myGame.GameComponents
         {
             if (IsActive)
             {
+                // Boss bullets kunnen we een andere kleur geven
+                Color bulletColor = isBossBullet ? Color.Red : Color.White;
+
                 spriteBatch.Draw(
                     texture,
                     position,
                     null,
-                    Color.White,
+                    bulletColor,
                     0f,
                     Vector2.Zero,
                     scale,

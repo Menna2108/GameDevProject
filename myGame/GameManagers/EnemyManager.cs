@@ -29,6 +29,12 @@ namespace myGame.GameManagers
         {
             spawnTimer -= (float)gameTime.ElapsedGameTime.TotalSeconds;
 
+            // stoppen bij level 3
+            if (GameManager.Instance.CurrentLevel == 3)
+            {
+                return;
+            }
+
             // Spawn vijanden
             if (spawnTimer <= 0)
             {

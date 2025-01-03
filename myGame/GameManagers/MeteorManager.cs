@@ -25,7 +25,7 @@ namespace myGame.GameManagers
 
         public void Update(GameTime gameTime, Rocket playerRocket, List<EnemyBase> enemies)
         {
-            if (!isLevel2) return;
+            if (!isLevel2 || GameManager.Instance.CurrentLevel == 3) return;
             spawnTimer -= (float)gameTime.ElapsedGameTime.TotalSeconds;
             if (spawnTimer <= 0)
             {

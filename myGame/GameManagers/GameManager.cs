@@ -16,6 +16,7 @@ namespace myGame.GameManagers
         public bool IsExiting { get; set; } = false;
         public bool IsGameOver { get; set; } = false;
         public int CurrentLevel { get; set; } = 1;
+        public bool IsGameWon { get; set; }
 
         private GameManager()
         {
@@ -23,6 +24,7 @@ namespace myGame.GameManagers
             IsPaused = false;
             IsExiting = false;
             IsGameOver = false;
+            IsGameWon = false;
         } // Singleton: private constructor
     }
 }
