@@ -16,7 +16,8 @@ namespace myGame.GameManagers
         private int enemiesToSpawn = 1; 
         private float enemySpeedIncrement = 0.05f; 
         private float currentEnemySpeed = 2f; 
-        private int maxEnemiesInLevel1 = 50; 
+        private int maxEnemiesInLevel1 = 50;
+        private List<EnemyBase> destroyedEnemies = new List<EnemyBase>();
 
         public EnemyManager(Texture2D rocketEnemyTexture)
         {
@@ -73,10 +74,12 @@ namespace myGame.GameManagers
                 {
                     if (bullet.Bounds.Intersects(enemies[i].Bounds))
                     {
-                        enemies[i].IsActive = false;  
-                        bullet.IsActive = false;      
+                        destroyedEnemies.Add(enemies[i]); 
+                        enemies[i].IsActive = false;
+                        bullet.IsActive = false;
                     }
                 }
+
             }
         }
 
@@ -115,6 +118,13 @@ namespace myGame.GameManagers
         {
             enemies.RemoveAll(e => e is RocketEnemy);
         }
+        public List<EnemyBase> GetDestroyedEnemies()
+        {
+            var tempDestroyed = new List<EnemyBase>(destroyedEnemies);
+            destroyedEnemies.Clear(); 
+            return tempDestroyed;
+        }
+
 
     }
 

@@ -1,6 +1,8 @@
 ﻿using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Audio;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
+using Microsoft.Xna.Framework.Media;
 using myGame.GameComponents;
 using myGame.GameEntities;
 using myGame.GameManagers;
@@ -52,6 +54,16 @@ namespace myGame
         private float levelUpTimer = 0f;
         private const float levelUpDisplayDuration = 3f;
 
+        // Sounds
+        SoundEffect losingHeartSound;
+        Song gameSound;
+        SoundEffect shootSound;
+        Song gameOver;
+        private bool hasPlayedGameOverSound = false;
+        SoundEffect coinSound;
+        SoundEffect shootedSound;
+        SoundEffect levelSound;
+
         public Game1()
         {
             _graphics = new GraphicsDeviceManager(this);
@@ -66,7 +78,6 @@ namespace myGame
             backgroundTexture = Content.Load<Texture2D>("space");
             heartTexture = Content.Load<Texture2D>("hartje");
             coinTexture = Content.Load<Texture2D>("coin");
-            rocketEnemyTexture = Content.Load<Texture2D>("Enemy1");
             rocketBulletTexture = Content.Load<Texture2D>("bullet");
             font = Content.Load<SpriteFont>("Fonts/coinFont");
 
@@ -77,10 +88,19 @@ namespace myGame
 
             Texture2D rocketTexture = Content.Load<Texture2D>("RocketSprite");
             rocket = new Rocket(rocketTexture, rocketBulletTexture, new Vector2(950, 850));
-            coinManager = new CoinManager(coinTexture);
+
+            // Geluiden 
+            gameSound = Content.Load<Song>("Audio/gameSound");
+            shootSound = Content.Load<SoundEffect>("Audio/shoot");
+            gameOver = Content.Load<Song>("Audio/over");
+            losingHeartSound = Content.Load<SoundEffect>("Audio/losingHeart");
+            coinSound = Content.Load<SoundEffect>("Audio/coin");
+            shootedSound = Content.Load<SoundEffect>("Audio/shooted");
+            levelSound = Content.Load<SoundEffect>("Audio/leveledUp");
 
             // Observer toevoegen
             coinCollector = new CoinCollector();
+            coinManager = new CoinManager(coinTexture, coinSound);
             coinManager.AddObserver(coinCollector);
             coinManager.GenerateRandomCoins(5, GraphicsDevice.Viewport.Bounds, rocket.Position.Y);
 
@@ -91,6 +111,8 @@ namespace myGame
             // Meteoor
             meteorTexture = Content.Load<Texture2D>("meteor");
             meteorManager = new MeteorManager(meteorTexture);
+
+            
         }
 
         protected override void Initialize()
@@ -116,6 +138,8 @@ namespace myGame
                 if (GameManager.Instance.IsGameStarted)
                 {
                     RestartGame();
+                    MediaPlayer.Play(gameSound);
+                    MediaPlayer.IsRepeating = true;
                 }
                 return;
             }
@@ -123,13 +147,24 @@ namespace myGame
             // Game Over-scherm
             if (rocket.Health <= 0 || GameManager.Instance.IsGameOver)
             {
+                if (!hasPlayedGameOverSound)
+                {
+                    MediaPlayer.Play(gameOver);
+                    MediaPlayer.IsRepeating = false;
+                    hasPlayedGameOverSound = true; 
+                }
                 gameOverScreen.Update(mouseState, out bool startNewGame, out bool exitGame);
-
+                
                 if (startNewGame)
                 {
                     RestartGame();
                     GameManager.Instance.IsGameStarted = true;
                     GameManager.Instance.IsGameOver = false;
+                    hasPlayedGameOverSound = false;
+                    MediaPlayer.Play(gameSound);
+                    MediaPlayer.IsRepeating = true;
+
+
                 }
                 else if (exitGame)
                 {
@@ -142,9 +177,11 @@ namespace myGame
             bool isPaused = GameManager.Instance.IsPaused;
             pausePlayScreen.Update(mouseState, ref isPaused);
             GameManager.Instance.IsPaused = isPaused;
+            MediaPlayer.IsMuted = false;
 
             if (isPaused)
             {
+                MediaPlayer.IsMuted = true;
                 return;
             }
 
@@ -157,7 +194,8 @@ namespace myGame
                 Bullet newBullet = rocket.Shoot();
                 if (newBullet != null)
                 {
-                    playerBullets.Add(newBullet);
+                   playerBullets.Add(newBullet);
+                   shootSound.Play();
                 }
             }
 
@@ -185,27 +223,32 @@ namespace myGame
 
             // Update coins
             coinManager.Update(gameTime, rocket.Bounds, backgroundPositionY, rocket.Position.Y);
-
             // Update vijanden
             enemyManager.Update(gameTime, rocket, playerBullets);
+            foreach (var enemy in enemyManager.GetDestroyedEnemies())
+            {
+                shootedSound.Play();
+            }
 
             // Controleer of de speler naar een nieuw niveau moet gaan
             if (coinCollector.TotalCoins >= 5 && currentLevel == 1)
             {
                 currentLevel = 2;
-                meteorManager.SetLevel(2, GraphicsDevice.Viewport.Bounds);  // Meteoren spawnen voor level 2
-                rocket.IncreaseSpeed(2f);  // Verhoog raketsnelheid
+                meteorManager.SetLevel(2, GraphicsDevice.Viewport.Bounds);
+                rocket.IncreaseSpeed(2f);  
                 rocket.DecreaseShootCooldown(0.09f);
                 isLevelUpVisible = true;
                 levelUpTimer = 0f;
+                levelSound.Play();
             }
             else if (coinCollector.TotalCoins >= 10 && currentLevel == 2)
             {
                 currentLevel = 3;
-                meteorManager.SetLevel(3, GraphicsDevice.Viewport.Bounds);  // Verwijder meteoren in level 3
-                enemyManager.RemoveRocketEnemies();  // Verwijder raket vijanden in level 3
+                meteorManager.SetLevel(3, GraphicsDevice.Viewport.Bounds);
+                enemyManager.RemoveRocketEnemies();
                 isLevelUpVisible = true;
                 levelUpTimer = 0f;
+                levelSound.Play();
             }
 
             // Controleer of de speler geraakt is door vijandelijke raketten
@@ -215,7 +258,7 @@ namespace myGame
                 {
                     if (rocketEnemy.CheckPlayerHit(rocket.Bounds))
                     {
-                        playerHitCount++;  // Verhoog de botsingsteller
+                        playerHitCount++;
 
                         if (playerHitCount >= 3)
                         {
@@ -223,14 +266,10 @@ namespace myGame
                             currentLives--;
                             playerHitCount = 0;
                         }
-
-                        // Stel de botsingservaring in
                         hasCollidedWithEnemy = true;
                     }
                 }
             }
-
-            // Reset de botsingstatus na elke update
             hasCollidedWithEnemy = false;
             meteorManager.Update(gameTime, rocket, enemyManager.GetEnemies());
 
@@ -259,6 +298,7 @@ namespace myGame
             else if (rocket.Health <= 0 || GameManager.Instance.IsGameOver)
             {
                 gameOverScreen.Draw(_spriteBatch);
+                
             }
             else
             {
@@ -340,7 +380,7 @@ namespace myGame
         {
             if (isLevelUpVisible)
             {
-                if (font != null) // Check if font is loaded
+                if (font != null)
                 {
                     string levelUpText = $"Level {currentLevel} - You leveled up!";
                     Vector2 levelUpTextSize = font.MeasureString(levelUpText);
@@ -349,11 +389,7 @@ namespace myGame
                         (_graphics.PreferredBackBufferHeight - levelUpTextSize.Y) / 2
                     );
                     spriteBatch.DrawString(font, levelUpText, levelUpTextPosition, Color.Green);
-
-                    // Update the level-up timer based on gameTime
                     levelUpTimer += (float)gameTime.ElapsedGameTime.TotalSeconds;
-
-                    // Check if the timer exceeds the display duration
                     if (levelUpTimer >= levelUpDisplayDuration)
                     {
                         isLevelUpVisible = false;

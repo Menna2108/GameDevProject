@@ -14,10 +14,8 @@ namespace myGame.GameEntities
 
         public override void Update(GameTime gameTime)
         {
-            // Beweeg simpelweg naar beneden
             position.Y += speed;
 
-            // Deactiveer als het buiten het scherm is
             if (position.Y > 850)
             {
                 IsActive = false;

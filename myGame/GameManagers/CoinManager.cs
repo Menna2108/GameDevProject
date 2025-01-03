@@ -1,5 +1,7 @@
 ﻿using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Audio;
 using Microsoft.Xna.Framework.Graphics;
+using Microsoft.Xna.Framework.Media;
 using myGame.GameComponents;
 using myGame.GameInterfaces;
 using System;
@@ -15,10 +17,12 @@ namespace myGame.GameManagers
 
         private int viewportHeight;
         private int viewportWidth;
+        SoundEffect coin;
 
-        public CoinManager(Texture2D texture)
+        public CoinManager(Texture2D texture, SoundEffect coinSound)
         {
             coinTexture = texture;
+            coin = coinSound; 
         }
 
         // Observers toevoegen
@@ -34,6 +38,7 @@ namespace myGame.GameManagers
             {
                 observer.OnCoinCollected();
             }
+            coin.Play();
         }
 
         public void GenerateRandomCoins(int count, Rectangle bounds, float maxYPosition)
@@ -59,6 +64,7 @@ namespace myGame.GameManagers
                 if (playerBounds.Intersects(coins[i].Bounds))
                 {
                     coins.RemoveAt(i);
+
                     NotifyCoinCollected();
                 }
             }

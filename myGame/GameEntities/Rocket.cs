@@ -114,10 +114,10 @@ namespace myGame.GameEntities
         {
             foreach (var meteor in meteors)
             {
-                if (Bounds.Intersects(meteor.Bounds)) // Controleer botsing tussen raket en meteor
+                if (Bounds.Intersects(meteor.Bounds)) 
                 {
                     LoseHealth();
-                    meteor.IsActive = false;  // Zet de meteor op inactief
+                    meteor.IsActive = false;  
                 }
             }
         }

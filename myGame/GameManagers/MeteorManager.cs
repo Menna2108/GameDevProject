@@ -58,7 +58,6 @@ namespace myGame.GameManagers
                     {
                         // Verwijder vijand
                         enemies[j].IsActive = false;  
-
                         break; 
                     }
                 }
