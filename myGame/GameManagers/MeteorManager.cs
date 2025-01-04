@@ -12,8 +12,9 @@ namespace myGame.GameManagers
         private Texture2D meteorTexture;
         private bool isLevel2;
         private float spawnTimer;
-        private const float spawnInterval = 1.5f; 
+        private const float spawnInterval = 1.5f;
         private Random random;
+        private Rectangle screenBounds;
 
         public MeteorManager(Texture2D texture)
         {
@@ -26,6 +27,7 @@ namespace myGame.GameManagers
         public void Update(GameTime gameTime, Rocket playerRocket, List<EnemyBase> enemies)
         {
             if (!isLevel2 || GameManager.Instance.CurrentLevel == 3) return;
+
             spawnTimer -= (float)gameTime.ElapsedGameTime.TotalSeconds;
             if (spawnTimer <= 0)
             {
@@ -43,6 +45,7 @@ namespace myGame.GameManagers
                     continue;
                 }
 
+                
                 if (meteors[i].Bounds.Intersects(playerRocket.Bounds))
                 {
                     if (playerRocket.Health > 0)
@@ -51,14 +54,14 @@ namespace myGame.GameManagers
                     }
                     meteors[i].IsActive = false;
                 }
+
+                
                 for (int j = enemies.Count - 1; j >= 0; j--)
                 {
-                    // Check of de meteoor met een vijand botst
                     if (meteors[i].Bounds.Intersects(enemies[j].Bounds))
                     {
-                        // Verwijder vijand
-                        enemies[j].IsActive = false;  
-                        break; 
+                        enemies[j].IsActive = false;
+                        break;
                     }
                 }
             }
@@ -66,12 +69,12 @@ namespace myGame.GameManagers
 
         private void SpawnMeteor()
         {
-            float speed = 3f; 
-            float scale = 0.15f; 
+            float speed = 3f;
+            float scale = 0.10f;
 
             Vector2 position = new Vector2(
-                random.Next(50, 1850), 
-                -50 
+                random.Next(50, screenBounds.Width - 50),
+                -50
             );
 
             meteors.Add(new MeteorEnemy(meteorTexture, position, speed, scale));
@@ -79,14 +82,16 @@ namespace myGame.GameManagers
 
         public void SetLevel(int level, Rectangle screenBounds)
         {
+            this.screenBounds = screenBounds; 
             isLevel2 = (level == 2);
+
             if (isLevel2)
             {
                 spawnTimer = 0;
             }
             else
             {
-                meteors.Clear();
+                meteors.Clear(); 
             }
         }
 
@@ -102,8 +107,9 @@ namespace myGame.GameManagers
 
         public void RestartMeteors(Rectangle screenBounds)
         {
-            meteors.Clear();
-            spawnTimer = 0;
+            meteors.Clear(); 
+            spawnTimer = 0;  
+            this.screenBounds = screenBounds; 
         }
 
         public List<MeteorEnemy> GetMeteors()

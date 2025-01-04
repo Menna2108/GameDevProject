@@ -24,6 +24,7 @@ namespace myGame
         private Texture2D rocketBulletTexture;
         private Texture2D meteorTexture;
         private Texture2D bossTexture;
+        private Texture2D fireTexture;
 
         private StartScreen startScreen;
         private PausePlayScreen pausePlayScreen;
@@ -41,8 +42,7 @@ namespace myGame
         private float backgroundPositionY = 0;
         private float backgroundSpeed = 2f;
 
-        private const int MaxLives = 3;
-        private int currentLives = MaxLives;
+        private const int MaxLives = Rocket.MaxHealth;
 
         private int currentLevel = 1;
 
@@ -62,7 +62,6 @@ namespace myGame
 
 
         // Sounds
-        SoundEffect losingHeartSound;
         Song gameSound;
         SoundEffect shootSound;
         Song gameOver;
@@ -70,6 +69,7 @@ namespace myGame
         SoundEffect coinSound;
         SoundEffect shootedSound;
         SoundEffect levelSound;
+        Song bossFightSong;
 
         public Game1()
         {
@@ -86,6 +86,7 @@ namespace myGame
             heartTexture = Content.Load<Texture2D>("hartje");
             coinTexture = Content.Load<Texture2D>("coin");
             rocketBulletTexture = Content.Load<Texture2D>("bullet");
+            fireTexture = Content.Load<Texture2D>("FireShoot");
             font = Content.Load<SpriteFont>("Fonts/coinFont");
 
             startScreen = new StartScreen(Content);
@@ -102,11 +103,11 @@ namespace myGame
             gameSound = Content.Load<Song>("Audio/gameSound");
             shootSound = Content.Load<SoundEffect>("Audio/shoot");
             gameOver = Content.Load<Song>("Audio/over");
-            losingHeartSound = Content.Load<SoundEffect>("Audio/losingHeart");
             coinSound = Content.Load<SoundEffect>("Audio/coin");
             shootedSound = Content.Load<SoundEffect>("Audio/shooted");
             levelSound = Content.Load<SoundEffect>("Audio/leveledUp");
             winSound = Content.Load<SoundEffect>("Audio/win");
+            bossFightSong = Content.Load<Song>("Audio/bossfight");
 
             // Observer toevoegen
             coinCollector = new CoinCollector();
@@ -123,25 +124,32 @@ namespace myGame
             meteorManager = new MeteorManager(meteorTexture);
 
             // baas
-            bossTexture = Content.Load<Texture2D>("Evil"); 
-            bossManager = new BossManager(bossTexture, rocketBulletTexture);
+            bossTexture = Content.Load<Texture2D>("Evil");
+            bossManager = new BossManager(bossTexture, fireTexture);
 
         }
 
         protected override void Initialize()
         {
+            // Scherminstellingen
             _graphics.PreferredBackBufferWidth = 1900;
             _graphics.PreferredBackBufferHeight = 950;
             _graphics.ApplyChanges();
+
+            // Reset game state
+            GameManager.Instance.Reset();
+
+            // Speler-instellingen
             playerBullets = new List<Bullet>();
 
-            bossManager = new BossManager(null, null);
+            // Vijanden en managers resetten
+            bossManager = new BossManager(null, null); // Nieuwe BossManager-instantie
             bossManager.Initialize(GraphicsDevice.Viewport.Bounds);
 
+            // Oproepen van de basisinitialisatie
             base.Initialize();
-            meteorManager.SetLevel(currentLevel, GraphicsDevice.Viewport.Bounds);
-            
         }
+
 
         protected override void Update(GameTime gameTime)
         {
@@ -151,9 +159,9 @@ namespace myGame
             if (!GameManager.Instance.IsGameStarted)
             {
                 startScreen.Update(mouseState, this);
-                GameManager.Instance.IsGameStarted = startScreen.IsGameStarted;
-                if (GameManager.Instance.IsGameStarted)
+                if (!GameManager.Instance.IsGameStarted && startScreen.IsGameStarted)
                 {
+                    GameManager.Instance.IsGameStarted = true;
                     RestartGame();
                     MediaPlayer.Play(gameSound);
                     MediaPlayer.IsRepeating = true;
@@ -161,9 +169,12 @@ namespace myGame
                 return;
             }
 
+
             // Game Win-scherm
-            if (coinCollector.TotalCoins >= 9)
+            if (GameManager.Instance.IsGameWon)
             {
+                gameWinScreen.Update(mouseState, out bool startNewGame, out bool exitGame);
+
                 if (!hasPlayedWinSound)
                 {
                     MediaPlayer.Stop();
@@ -171,16 +182,9 @@ namespace myGame
                     hasPlayedWinSound = true;
                 }
 
-                GameManager.Instance.IsGameWon = true;
-                gameWinScreen.Update(mouseState, out bool startNewGame, out bool exitGame);
-
                 if (startNewGame)
                 {
-                    if (currentLevel == 3)
-                    {
-                        bossManager.Reset();
-                        enemyManager.RemoveRocketEnemies(); // Verwijder vijandelijke raketten
-                    }
+                    GameManager.Instance.IsGameWon = false;
                     RestartGame();
                     return;
                 }
@@ -194,6 +198,7 @@ namespace myGame
             // Game Over-scherm
             if (rocket.Health <= 0 || GameManager.Instance.IsGameOver)
             {
+                gameOverScreen.Update(mouseState, out bool startNewGame, out bool exitGame);
                 if (!hasPlayedGameOverSound)
                 {
                     MediaPlayer.Play(gameOver);
@@ -201,14 +206,15 @@ namespace myGame
                     hasPlayedGameOverSound = true;
                 }
 
-                gameOverScreen.Update(mouseState, out bool startNewGame, out bool exitGame);
+                
 
                 if (startNewGame)
                 {
+                    GameManager.Instance.IsGameOver = false;
                     if (currentLevel == 3)
                     {
                         bossManager.Reset();
-                        enemyManager.RemoveRocketEnemies();
+                        enemyManager.ClearAllEnemies();
                     }
                     RestartGame();
                     return;
@@ -219,7 +225,6 @@ namespace myGame
                 }
                 return;
             }
-
 
             // Pauzescherm
             bool isPaused = GameManager.Instance.IsPaused;
@@ -232,8 +237,16 @@ namespace myGame
             // Update speler
             var keyboardState = Keyboard.GetState();
             rocket.Update(gameTime, keyboardState);
-            if (currentLevel == 3)
+
+            // Update vijanden alleen als het level kleiner is dan 3
+            if (currentLevel < 3)
             {
+                enemyManager.Update(gameTime, rocket, playerBullets);
+            }
+            else if (currentLevel == 3)
+            {
+                // Verwijder alle vijanden in level 3
+                enemyManager.ClearAllEnemies();
                 bossManager.Update(gameTime, rocket, playerBullets);
             }
 
@@ -273,10 +286,13 @@ namespace myGame
             coinManager.Update(gameTime, rocket.Bounds, backgroundPositionY, rocket.Position.Y);
 
             // Update vijanden
-            enemyManager.Update(gameTime, rocket, playerBullets);
-            foreach (var enemy in enemyManager.GetDestroyedEnemies())
+            if (currentLevel < 3)
             {
-                shootedSound.Play();
+                enemyManager.Update(gameTime, rocket, playerBullets);
+                foreach (var enemy in enemyManager.GetDestroyedEnemies())
+                {
+                    shootedSound.Play();
+                }
             }
 
             // Controleer op level-ups
@@ -289,8 +305,18 @@ namespace myGame
                 LevelUp(3);
             }
 
+            // Controleer of de boss verslagen is en of de speler 9 coins heeft
+            if (currentLevel == 3 && bossManager.IsBossDefeated && coinCollector.TotalCoins >= 9)
+            {
+                GameManager.Instance.IsGameWon = true; // Toon het win-scherm
+            }
+
             // Controleer botsingen
             HandleCollisions();
+            if (GameManager.Instance.IsGameStarted && rocket.Health == MaxLives && currentLevel == 1)
+            {
+                return;
+            }
 
             meteorManager.Update(gameTime, rocket, enemyManager.GetEnemies());
             base.Update(gameTime);
@@ -316,7 +342,6 @@ namespace myGame
             else if (rocket.Health <= 0 || GameManager.Instance.IsGameOver)
             {
                 gameOverScreen.Draw(_spriteBatch);
-                
             }
             else if (GameManager.Instance.IsGameWon)
             {
@@ -345,11 +370,20 @@ namespace myGame
                     {
                         bullet.Draw(_spriteBatch);
                     }
+
+                    // Teken alleen de boss in level 3
                     if (currentLevel == 3)
                     {
                         bossManager.Draw(_spriteBatch);
+                        // Teken de boss health onder de coins text
+                        string bossHealthText = $"Boss Health: {bossManager.GetBossHealth()}";
+                        _spriteBatch.DrawString(font, bossHealthText, new Vector2(950, 50), Color.Red);
                     }
-                    enemyManager.Draw(_spriteBatch);
+                    else
+                    {
+                        enemyManager.Draw(_spriteBatch);
+                    }
+
                     meteorManager.Draw(_spriteBatch);
                     DrawLevelUpScreen(_spriteBatch, gameTime);
 
@@ -374,8 +408,6 @@ namespace myGame
                     string levelText = $"Level: {currentLevel}";
                     _spriteBatch.DrawString(font, coinText, new Vector2(950, 15), Color.Yellow);
                     _spriteBatch.DrawString(font, levelText, new Vector2(20, 60), Color.White);
-
-
                 }
             }
 
@@ -386,15 +418,14 @@ namespace myGame
 
         private void RestartGame()
         {
-            Console.WriteLine("Restarting game...");
+            // Reset game state manager eerst
+            GameManager.Instance.Reset();
 
-            // Reset rocket
+            // Reset rocket eerst
             rocket.Reset(new Vector2(950, 850));
-            rocket.Health = MaxLives;
-            currentLives = MaxLives;
-            currentLevel = 1;
-
-            // Reset alle actieve vijanden en kogels
+            
+            // Reset alle managers
+            enemyManager.ClearAllEnemies();
             enemyManager.Reset();
             meteorManager.RestartMeteors(GraphicsDevice.Viewport.Bounds);
             bossManager.Reset();
@@ -408,17 +439,25 @@ namespace myGame
             hasPlayedWinSound = false;
             hasPlayedGameOverSound = false;
             isLevelUpVisible = false;
-            GameManager.Instance.IsGameStarted = true;
-            GameManager.Instance.IsGameOver = false;
-            GameManager.Instance.IsGameWon = false;
-            GameManager.Instance.IsPaused = false;
+            hasCollidedWithEnemy = false;
+            currentLevel = 1;
+            backgroundPositionY = 0;
 
-            // Reset muziek
+            // Reset enemy speed
+            enemyManager.ResetEnemySpeed();
+
+            // Set game state na alle resets
+            GameManager.Instance.IsGameStarted = true;
+            GameManager.Instance.IsGameWon = false;
+            GameManager.Instance.IsGameOver = false;
+
+            // Reset muziek als laatste
+            MediaPlayer.Stop();
             MediaPlayer.Play(gameSound);
             MediaPlayer.IsRepeating = true;
 
-            Console.WriteLine("Game successfully restarted.");
         }
+
 
         private void DrawLevelUpScreen(SpriteBatch spriteBatch, GameTime gameTime)
         {
@@ -461,39 +500,62 @@ namespace myGame
             else if (newLevel == 3)
             {
                 SetupLevel3();
+                MediaPlayer.Stop(); 
+                MediaPlayer.Play(bossFightSong);
+                MediaPlayer.IsRepeating = true;
             }
         }
 
         private void SetupLevel3()
         {
+            // Reset alle enemies
+            enemyManager.ClearAllEnemies();
+            enemyManager.Reset();
+
+            // Level 3 content
             meteorManager.SetLevel(3, GraphicsDevice.Viewport.Bounds);
-            enemyManager.RemoveRocketEnemies(); 
-            bossManager = new BossManager(bossTexture, rocketBulletTexture); 
+            bossManager = new BossManager(bossTexture, rocketBulletTexture);
             bossManager.Initialize(GraphicsDevice.Viewport.Bounds);
             bossManager.SetLevel(3);
+
+            // Power up mijn speler rocket
+            rocket.IncreaseSpeed(1f);
+            rocket.DecreaseShootCooldown(0.05f);
         }
 
         private void HandleCollisions()
         {
+            if (rocket.Health <= 0) return;
+
+            bool currentlyColliding = false;
+
             foreach (var enemy in enemyManager.GetEnemies())
             {
-                if (enemy is RocketEnemy rocketEnemy && !hasCollidedWithEnemy)
+                if (enemy is RocketEnemy rocketEnemy)
                 {
                     if (rocketEnemy.CheckPlayerHit(rocket.Bounds))
                     {
-                        playerHitCount++;
-                        if (playerHitCount >= 3)
+                        currentlyColliding = true;
+                        if (!hasCollidedWithEnemy)
                         {
                             rocket.LoseHealth();
-                            currentLives--;
-                            losingHeartSound?.Play();
-                            playerHitCount = 0;
+                            rocketEnemy.IsActive = false;
+                            hasCollidedWithEnemy = true;
                         }
-                        hasCollidedWithEnemy = true;
+                        break;
                     }
                 }
             }
-            hasCollidedWithEnemy = false;
+            if (currentLevel == 3 && bossManager.CheckCollisionWithPlayerBounds(rocket.Bounds))
+            {
+                rocket.LoseHealth();
+            }
+            if (!currentlyColliding)
+            {
+                hasCollidedWithEnemy = false;
+            }
+
         }
+
     }
 }

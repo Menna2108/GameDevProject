@@ -26,5 +26,16 @@ namespace myGame.GameManagers
             IsGameOver = false;
             IsGameWon = false;
         } // Singleton: private constructor
+
+        public void Reset()
+        {
+            IsGameStarted = false;
+            IsPaused = false;
+            IsExiting = false;
+            IsGameOver = false;
+            IsGameWon = false;
+            CurrentLevel = 1;
+        }
+
     }
 }

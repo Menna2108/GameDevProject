@@ -45,14 +45,17 @@ namespace MyGame.GameScreens
             string welcomeText = "Welcome to Survive the Space!";
             string controlsText = "Use Arrow Keys to move and Space to shoot";
             string surviveText = "Let's survive this!";
+            string bossWarningText = "Warning: Touching the boss will instantly defeat you due to his powerful aura!";
 
-            Vector2 welcomePosition = new Vector2(700, 200);
-            Vector2 controlsPosition = new Vector2(650, 300);
-            Vector2 survivePosition = new Vector2(800, 400);
+            Vector2 welcomePosition = new Vector2(700, 50);
+            Vector2 controlsPosition = new Vector2(650, 200);
+            Vector2 survivePosition = new Vector2(800, 300);
+            Vector2 bossWarningPosition = new Vector2(400, 400);
 
             spriteBatch.DrawString(font, welcomeText, welcomePosition, Color.Yellow);
             spriteBatch.DrawString(font, controlsText, controlsPosition, Color.White);
             spriteBatch.DrawString(font, surviveText, survivePosition, Color.Green);
+            spriteBatch.DrawString(font, bossWarningText, bossWarningPosition, Color.Red);
 
             startButton.Draw(spriteBatch);
             exitButton.Draw(spriteBatch);

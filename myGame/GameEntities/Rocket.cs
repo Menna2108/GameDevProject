@@ -19,7 +19,21 @@ namespace myGame.GameEntities
         private Texture2D bulletTexture;
         private float shootCooldown = 0.5f;
         private float shootTimer = 0f;
-        public int Health { get; set; }
+
+        private int health;
+        public const int MaxHealth = 3;
+        public int Health
+        {
+            get => health;
+            set
+            {
+                health = Math.Max(0, Math.Min(value, MaxHealth));
+                if (health <= 0)
+                {
+                    GameManager.Instance.IsGameOver = true;
+                }
+            }
+        }
         public bool CanShoot => shootTimer <= 0;
 
         public Vector2 Position => position;
@@ -101,6 +115,7 @@ namespace myGame.GameEntities
         {
             position = startPosition;
             shootTimer = 0;
+            Health = MaxHealth;
         }
         public void LoseHealth()
         {
@@ -130,7 +145,10 @@ namespace myGame.GameEntities
         {
             shootCooldown = Math.Max(0.1f, shootCooldown - decrement);  
         }
-
+        public void SetHealth(int value)
+        {
+            Health = value;
+        }
 
     }
 

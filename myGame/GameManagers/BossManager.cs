@@ -10,13 +10,15 @@ namespace myGame.GameManagers
     {
         private BossEnemy boss;
         private bool isLevel3;
+        public bool IsBossDefeated => boss != null && !boss.IsActive;
 
-
-        public BossManager(Texture2D bossTexture, Texture2D bulletTexture)
+        public BossManager(Texture2D bossTexture, Texture2D fireTexture)
         {
-            // Boss in het midden van het scherm maken
             Vector2 startPosition = new Vector2(950, 100);
-            boss = new BossEnemy(bossTexture, bulletTexture, startPosition, 3f, 0.3f);
+            if (bossTexture != null && fireTexture != null)
+            {
+                boss = new BossEnemy(bossTexture, fireTexture, startPosition, 3f, 0.3f);
+            }
             isLevel3 = false;
         }
 
@@ -25,7 +27,7 @@ namespace myGame.GameManagers
             if (boss != null)
             {
                 boss.SetScreenBounds(screenBounds);
-                boss.IsActive = false; // Start inactief tot level 3
+                boss.IsActive = false; 
             }
         }
 
@@ -33,18 +35,20 @@ namespace myGame.GameManagers
         {
             if (!isLevel3 || boss == null) return;
 
-            // Update boss positie
             boss.Update(gameTime);
 
-            // Check voor botsingen met speler kogels
-            //foreach (var bullet in playerBullets)
-            //{
-            //    if (bullet.IsActive && boss.Bounds.Intersects(bullet.Bounds))
-            //    {
-            //        boss.TakeDamage();
-            //        bullet.IsActive = false;
-            //    }
-            //}
+            // Controleer of de boss geraakt wordt door spelerkogels
+            if (boss.CheckCollisionWithBullets(playerBullets))
+            {
+                boss.TakeDamage();
+            }
+
+            // Controleer of de speler geraakt wordt door boss-projectielen
+            if (boss.CheckCollisionWithPlayer(playerRocket.Bounds))
+            {
+                playerRocket.LoseHealth();
+            }
+
         }
 
         public void Draw(SpriteBatch spriteBatch)
@@ -63,9 +67,33 @@ namespace myGame.GameManagers
                 boss.IsActive = isLevel3;
                 if (isLevel3)
                 {
-                    boss.Position = new Vector2(950, 100);
+                    boss.Reset();
                 }
             }
+        }
+        public void TakeDamage()
+        {
+            if (boss != null && boss.IsActive)
+            {
+                boss.TakeDamage();
+            }
+        }
+        public bool CheckCollisionWithPlayer(Rectangle playerBounds)
+        {
+            if (boss != null && boss.IsActive)
+            {
+                return boss.CheckCollisionWithPlayer(playerBounds);
+            }
+            return false;
+        }
+
+        public bool CheckCollisionWithPlayerBounds(Rectangle playerBounds)
+        {
+            if (boss != null && boss.IsActive)
+            {
+                return boss.Bounds.Intersects(playerBounds);
+            }
+            return false;
         }
 
         public void Reset()
@@ -73,8 +101,17 @@ namespace myGame.GameManagers
             if (boss != null)
             {
                 boss.IsActive = false;
+                boss.Reset(); 
             }
             isLevel3 = false;
+        }
+        public int GetBossHealth()
+        {
+            if (boss != null && boss.IsActive)
+            {
+                return boss.Health;
+            }
+            return 0;
         }
     }
 }

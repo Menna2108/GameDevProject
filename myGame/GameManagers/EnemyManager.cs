@@ -13,20 +13,40 @@ namespace myGame.GameManagers
         private Texture2D rocketEnemyTexture;
         private float spawnTimer;
         private float spawnCooldown = 1f;
-        private int enemiesToSpawn = 1; 
-        private float enemySpeedIncrement = 0.05f; 
-        private float currentEnemySpeed = 2f; 
+        private int enemiesToSpawn = 1;
+        private float enemySpeedIncrement = 0.05f;
+        private float baseSpeed = 2f; 
+        private float currentSpeed; 
         private int maxEnemiesInLevel1 = 50;
         private List<EnemyBase> destroyedEnemies = new List<EnemyBase>();
+        private bool isActive = true;
 
         public EnemyManager(Texture2D rocketEnemyTexture)
         {
             this.rocketEnemyTexture = rocketEnemyTexture;
             enemies = new List<EnemyBase>();
+            this.currentSpeed = baseSpeed;
+        }
+
+        public void SetActive(bool active)
+        {
+            isActive = active;
+        }
+
+        public void ResetEnemySpeed()
+        {
+            currentSpeed = baseSpeed;
+        }
+
+        public void IncreaseEnemySpeed(float multiplier)
+        {
+            currentSpeed = baseSpeed * multiplier;
         }
 
         public void Update(GameTime gameTime, Rocket playerRocket, List<Bullet> playerBullets)
         {
+            if (!isActive) return; 
+
             spawnTimer -= (float)gameTime.ElapsedGameTime.TotalSeconds;
 
             // stoppen bij level 3
@@ -42,7 +62,7 @@ namespace myGame.GameManagers
 
                 for (int i = 0; i < enemiesToSpawn; i++)
                 {
-                    SpawnRocketEnemy();
+                    SpawnEnemy();
                 }
 
                 IncreaseEnemySpeed();
@@ -80,12 +100,11 @@ namespace myGame.GameManagers
                 {
                     if (bullet.Bounds.Intersects(enemies[i].Bounds))
                     {
-                        destroyedEnemies.Add(enemies[i]); 
+                        destroyedEnemies.Add(enemies[i]);
                         enemies[i].IsActive = false;
                         bullet.IsActive = false;
                     }
                 }
-
             }
         }
 
@@ -97,42 +116,43 @@ namespace myGame.GameManagers
             }
         }
 
-        private void SpawnRocketEnemy()
+        private void SpawnEnemy()
         {
-            Vector2 startPosition = new Vector2(Random.Shared.Next(50, 1850), -50);
-            float scale = 0.15f;
-            enemies.Add(new RocketEnemy(rocketEnemyTexture, startPosition, currentEnemySpeed, scale));
+            Random rand = new Random();
+            float xPos = rand.Next(0, 1800); 
+            Vector2 position = new Vector2(xPos, -50);
+
+            RocketEnemy enemy = new RocketEnemy(rocketEnemyTexture, position, currentSpeed, 0.2f);
+            enemies.Add(enemy);
         }
 
         private void IncreaseEnemySpeed()
         {
-            currentEnemySpeed += enemySpeedIncrement;
+            currentSpeed += enemySpeedIncrement;
         }
 
         public void Reset()
         {
             enemies.Clear();
             spawnTimer = 0;
-            currentEnemySpeed = 2f; 
+            currentSpeed = baseSpeed;
         }
 
         public List<EnemyBase> GetEnemies()
         {
             return enemies;
         }
-        public void RemoveRocketEnemies()
+
+        public void ClearAllEnemies()
         {
-            enemies.RemoveAll(e => e is RocketEnemy);
+            enemies.Clear();
         }
+
         public List<EnemyBase> GetDestroyedEnemies()
         {
             var tempDestroyed = new List<EnemyBase>(destroyedEnemies);
-            destroyedEnemies.Clear(); 
+            destroyedEnemies.Clear();
             return tempDestroyed;
         }
-
-
     }
-
-
 }
