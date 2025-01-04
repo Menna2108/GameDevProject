@@ -12,7 +12,6 @@ namespace MyGame.GameScreens
         private Button exitButton;
         private Texture2D gameOverTexture;
         private Vector2 gameOverPosition;
-
         public GameOverScreen(ContentManager content)
         {
             gameOverTexture = content.Load<Texture2D>("gameover");

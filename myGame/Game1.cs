@@ -166,8 +166,8 @@ namespace myGame
             {
                 if (!hasPlayedWinSound)
                 {
-                    MediaPlayer.Stop(); 
-                    winSound.Play();    
+                    MediaPlayer.Stop();
+                    winSound.Play();
                     hasPlayedWinSound = true;
                 }
 
@@ -176,11 +176,13 @@ namespace myGame
 
                 if (startNewGame)
                 {
+                    if (currentLevel == 3)
+                    {
+                        bossManager.Reset();
+                        enemyManager.RemoveRocketEnemies(); // Verwijder vijandelijke raketten
+                    }
                     RestartGame();
-                    GameManager.Instance.IsGameWon = false;
-                    hasPlayedWinSound = false;
-                    MediaPlayer.Play(gameSound); 
-                    MediaPlayer.IsRepeating = true;
+                    return;
                 }
                 else if (exitGame)
                 {
@@ -188,7 +190,6 @@ namespace myGame
                 }
                 return;
             }
-
 
             // Game Over-scherm
             if (rocket.Health <= 0 || GameManager.Instance.IsGameOver)
@@ -204,11 +205,13 @@ namespace myGame
 
                 if (startNewGame)
                 {
+                    if (currentLevel == 3)
+                    {
+                        bossManager.Reset();
+                        enemyManager.RemoveRocketEnemies();
+                    }
                     RestartGame();
-                    GameManager.Instance.IsGameOver = false;
-                    hasPlayedGameOverSound = false;
-                    MediaPlayer.Play(gameSound);
-                    MediaPlayer.IsRepeating = true;
+                    return;
                 }
                 else if (exitGame)
                 {
@@ -216,6 +219,7 @@ namespace myGame
                 }
                 return;
             }
+
 
             // Pauzescherm
             bool isPaused = GameManager.Instance.IsPaused;
@@ -228,6 +232,10 @@ namespace myGame
             // Update speler
             var keyboardState = Keyboard.GetState();
             rocket.Update(gameTime, keyboardState);
+            if (currentLevel == 3)
+            {
+                bossManager.Update(gameTime, rocket, playerBullets);
+            }
 
             if (keyboardState.IsKeyDown(Keys.Space))
             {
@@ -378,26 +386,38 @@ namespace myGame
 
         private void RestartGame()
         {
+            Console.WriteLine("Restarting game...");
+
+            // Reset rocket
             rocket.Reset(new Vector2(950, 850));
             rocket.Health = MaxLives;
-
             currentLives = MaxLives;
             currentLevel = 1;
-            coinCollector.Reset();
-            coinManager.GenerateRandomCoins(5, GraphicsDevice.Viewport.Bounds, rocket.Position.Y);
+
+            // Reset alle actieve vijanden en kogels
             enemyManager.Reset();
             meteorManager.RestartMeteors(GraphicsDevice.Viewport.Bounds);
-            meteorManager.SetLevel(1, GraphicsDevice.Viewport.Bounds);
-            playerBullets.Clear();
             bossManager.Reset();
-            hasPlayedWinSound = false;
+            playerBullets.Clear();
 
+            // Reset coins
+            coinCollector.Reset();
+            coinManager.GenerateRandomCoins(5, GraphicsDevice.Viewport.Bounds, rocket.Position.Y);
+
+            // Reset game states
+            hasPlayedWinSound = false;
+            hasPlayedGameOverSound = false;
+            isLevelUpVisible = false;
             GameManager.Instance.IsGameStarted = true;
             GameManager.Instance.IsGameOver = false;
+            GameManager.Instance.IsGameWon = false;
             GameManager.Instance.IsPaused = false;
 
-            MediaPlayer.Play(gameSound); 
+            // Reset muziek
+            MediaPlayer.Play(gameSound);
             MediaPlayer.IsRepeating = true;
+
+            Console.WriteLine("Game successfully restarted.");
         }
 
         private void DrawLevelUpScreen(SpriteBatch spriteBatch, GameTime gameTime)
@@ -440,11 +460,17 @@ namespace myGame
             }
             else if (newLevel == 3)
             {
-                GameManager.Instance.CurrentLevel = 3;
-                meteorManager.SetLevel(3, GraphicsDevice.Viewport.Bounds);
-                enemyManager.RemoveRocketEnemies();
-                bossManager.SetLevel(3);
+                SetupLevel3();
             }
+        }
+
+        private void SetupLevel3()
+        {
+            meteorManager.SetLevel(3, GraphicsDevice.Viewport.Bounds);
+            enemyManager.RemoveRocketEnemies(); 
+            bossManager = new BossManager(bossTexture, rocketBulletTexture); 
+            bossManager.Initialize(GraphicsDevice.Viewport.Bounds);
+            bossManager.SetLevel(3);
         }
 
         private void HandleCollisions()

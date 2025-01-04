@@ -10,15 +10,15 @@ namespace MyGame.GameScreens
     {
         private Button startButton;
         private Button exitButton;
+        private SpriteFont font;
 
         public bool IsGameStarted { get; private set; } = false;
 
         public StartScreen(ContentManager content)
         {
-            startButton = new Button(content.Load<Texture2D>("start"), new Vector2(875, 400));
-            exitButton = new Button(content.Load<Texture2D>("exit"), new Vector2(875, 600), 0.4f, true, 0.4f, 0.5f, 0.005f);
-
-
+            startButton = new Button(content.Load<Texture2D>("start"), new Vector2(920, 600));
+            exitButton = new Button(content.Load<Texture2D>("exit"), new Vector2(920, 750), 0.4f, true, 0.4f, 0.5f, 0.005f);
+            font = content.Load<SpriteFont>("Fonts/coinFont");
         }
 
         public void Update(MouseState mouseState, Game game)
@@ -26,7 +26,6 @@ namespace MyGame.GameScreens
             startButton.Update();
             exitButton.Update();
 
-            // Klik-detectie
             if (mouseState.LeftButton == ButtonState.Pressed)
             {
                 if (startButton.GetBounds().Contains(mouseState.Position))
@@ -42,6 +41,19 @@ namespace MyGame.GameScreens
 
         public void Draw(SpriteBatch spriteBatch)
         {
+            // Draw welcome text
+            string welcomeText = "Welcome to Survive the Space!";
+            string controlsText = "Use Arrow Keys to move and Space to shoot";
+            string surviveText = "Let's survive this!";
+
+            Vector2 welcomePosition = new Vector2(700, 200);
+            Vector2 controlsPosition = new Vector2(650, 300);
+            Vector2 survivePosition = new Vector2(800, 400);
+
+            spriteBatch.DrawString(font, welcomeText, welcomePosition, Color.Yellow);
+            spriteBatch.DrawString(font, controlsText, controlsPosition, Color.White);
+            spriteBatch.DrawString(font, surviveText, survivePosition, Color.Green);
+
             startButton.Draw(spriteBatch);
             exitButton.Draw(spriteBatch);
         }
