@@ -42,7 +42,7 @@ namespace MyGame.GameScreens
         public void Draw(SpriteBatch spriteBatch)
         {
             // Draw welcome text
-            string welcomeText = "Welcome to Survive the Space!";
+            string welcomeText = "Welcome to Space Survival!";
             string controlsText = "Use Arrow Keys to move and Space to shoot";
             string surviveText = "Let's survive this!";
             string bossWarningText = "Warning: Touching the boss will instantly defeat you due to his powerful aura!";

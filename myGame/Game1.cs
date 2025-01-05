@@ -1,5 +1,4 @@
 ﻿using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Audio;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using Microsoft.Xna.Framework.Media;
@@ -60,17 +59,6 @@ namespace myGame
         private bool hasPlayedWinSound = false;
         private bool hasPlayedGameOverSound = false;
 
-
-        // Sounds
-        Song gameSound;
-        SoundEffect shootSound;
-        Song gameOver;
-        SoundEffect winSound;
-        SoundEffect coinSound;
-        SoundEffect shootedSound;
-        SoundEffect levelSound;
-        Song bossFightSong;
-
         public Game1()
         {
             _graphics = new GraphicsDeviceManager(this);
@@ -99,19 +87,12 @@ namespace myGame
             Texture2D rocketTexture = Content.Load<Texture2D>("RocketSprite");
             rocket = new Rocket(rocketTexture, rocketBulletTexture, new Vector2(950, 850));
 
-            // Geluiden 
-            gameSound = Content.Load<Song>("Audio/gameSound");
-            shootSound = Content.Load<SoundEffect>("Audio/shoot");
-            gameOver = Content.Load<Song>("Audio/over");
-            coinSound = Content.Load<SoundEffect>("Audio/coin");
-            shootedSound = Content.Load<SoundEffect>("Audio/shooted");
-            levelSound = Content.Load<SoundEffect>("Audio/leveledUp");
-            winSound = Content.Load<SoundEffect>("Audio/win");
-            bossFightSong = Content.Load<Song>("Audio/bossfight");
+            // Initialiseer de AudioManager en laad de audio
+            AudioManager.Instance.LoadContent(Content);
 
             // Observer toevoegen
             coinCollector = new CoinCollector();
-            coinManager = new CoinManager(coinTexture, coinSound);
+            coinManager = new CoinManager(coinTexture, AudioManager.Instance);
             coinManager.AddObserver(coinCollector);
             coinManager.GenerateRandomCoins(5, GraphicsDevice.Viewport.Bounds, rocket.Position.Y);
 
@@ -123,10 +104,9 @@ namespace myGame
             meteorTexture = Content.Load<Texture2D>("meteor");
             meteorManager = new MeteorManager(meteorTexture);
 
-            // baas
+            // Baas
             bossTexture = Content.Load<Texture2D>("Evil");
             bossManager = new BossManager(bossTexture, fireTexture);
-
         }
 
         protected override void Initialize()
@@ -143,13 +123,12 @@ namespace myGame
             playerBullets = new List<Bullet>();
 
             // Vijanden en managers resetten
-            bossManager = new BossManager(null, null); // Nieuwe BossManager-instantie
+            bossManager = new BossManager(null, null); 
             bossManager.Initialize(GraphicsDevice.Viewport.Bounds);
 
             // Oproepen van de basisinitialisatie
             base.Initialize();
         }
-
 
         protected override void Update(GameTime gameTime)
         {
@@ -163,22 +142,21 @@ namespace myGame
                 {
                     GameManager.Instance.IsGameStarted = true;
                     RestartGame();
-                    MediaPlayer.Play(gameSound);
-                    MediaPlayer.IsRepeating = true;
+                    AudioManager.Instance.PlayGameSound(); 
                 }
                 return;
             }
 
-
             // Game Win-scherm
             if (GameManager.Instance.IsGameWon)
             {
+                AudioManager.Instance.StopMusic();
+
                 gameWinScreen.Update(mouseState, out bool startNewGame, out bool exitGame);
 
                 if (!hasPlayedWinSound)
                 {
-                    MediaPlayer.Stop();
-                    winSound.Play();
+                    AudioManager.Instance.PlayWinSound(); 
                     hasPlayedWinSound = true;
                 }
 
@@ -201,12 +179,9 @@ namespace myGame
                 gameOverScreen.Update(mouseState, out bool startNewGame, out bool exitGame);
                 if (!hasPlayedGameOverSound)
                 {
-                    MediaPlayer.Play(gameOver);
-                    MediaPlayer.IsRepeating = false;
+                    AudioManager.Instance.PlayGameOver(); 
                     hasPlayedGameOverSound = true;
                 }
-
-                
 
                 if (startNewGame)
                 {
@@ -256,7 +231,7 @@ namespace myGame
                 if (newBullet != null)
                 {
                     playerBullets.Add(newBullet);
-                    shootSound.Play();
+                    AudioManager.Instance.PlayShootSound(); 
                 }
             }
 
@@ -291,7 +266,7 @@ namespace myGame
                 enemyManager.Update(gameTime, rocket, playerBullets);
                 foreach (var enemy in enemyManager.GetDestroyedEnemies())
                 {
-                    shootedSound.Play();
+                    AudioManager.Instance.PlayShootedSound(); 
                 }
             }
 
@@ -305,10 +280,10 @@ namespace myGame
                 LevelUp(3);
             }
 
-            // Controleer of de boss verslagen is en of de speler 9 coins heeft
+            // Controleer of de boss verslagen is en of de speler 30 coins heeft
             if (currentLevel == 3 && bossManager.IsBossDefeated && coinCollector.TotalCoins >= 9)
             {
-                GameManager.Instance.IsGameWon = true; // Toon het win-scherm
+                GameManager.Instance.IsGameWon = true;
             }
 
             // Controleer botsingen
@@ -321,6 +296,7 @@ namespace myGame
             meteorManager.Update(gameTime, rocket, enemyManager.GetEnemies());
             base.Update(gameTime);
         }
+
         protected override void Draw(GameTime gameTime)
         {
             GraphicsDevice.Clear(Color.CornflowerBlue);
@@ -423,7 +399,7 @@ namespace myGame
 
             // Reset rocket eerst
             rocket.Reset(new Vector2(950, 850));
-            
+
             // Reset alle managers
             enemyManager.ClearAllEnemies();
             enemyManager.Reset();
@@ -452,12 +428,9 @@ namespace myGame
             GameManager.Instance.IsGameOver = false;
 
             // Reset muziek als laatste
-            MediaPlayer.Stop();
-            MediaPlayer.Play(gameSound);
-            MediaPlayer.IsRepeating = true;
-
+            AudioManager.Instance.StopMusic(); 
+            AudioManager.Instance.PlayGameSound(); 
         }
-
 
         private void DrawLevelUpScreen(SpriteBatch spriteBatch, GameTime gameTime)
         {
@@ -484,10 +457,11 @@ namespace myGame
                 }
             }
         }
+
         private void LevelUp(int newLevel)
         {
             currentLevel = newLevel;
-            levelSound.Play();
+            AudioManager.Instance.PlayLevelSound();
             isLevelUpVisible = true;
             levelUpTimer = 0f;
 
@@ -500,9 +474,8 @@ namespace myGame
             else if (newLevel == 3)
             {
                 SetupLevel3();
-                MediaPlayer.Stop(); 
-                MediaPlayer.Play(bossFightSong);
-                MediaPlayer.IsRepeating = true;
+                AudioManager.Instance.StopMusic();
+                AudioManager.Instance.PlayBossFight(); 
             }
         }
 
@@ -554,8 +527,6 @@ namespace myGame
             {
                 hasCollidedWithEnemy = false;
             }
-
         }
-
     }
 }
