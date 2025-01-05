@@ -271,17 +271,17 @@ namespace myGame
             }
 
             // Controleer op level-ups
-            if (coinCollector.TotalCoins >= 3 && currentLevel == 1)
+            if (coinCollector.TotalCoins >= 10 && currentLevel == 1)
             {
                 LevelUp(2);
             }
-            else if (coinCollector.TotalCoins >= 6 && currentLevel == 2)
+            else if (coinCollector.TotalCoins >= 20 && currentLevel == 2)
             {
                 LevelUp(3);
             }
 
             // Controleer of de boss verslagen is en of de speler 30 coins heeft
-            if (currentLevel == 3 && bossManager.IsBossDefeated && coinCollector.TotalCoins >= 9)
+            if (currentLevel == 3 && bossManager.IsBossDefeated && coinCollector.TotalCoins >= 30)
             {
                 GameManager.Instance.IsGameWon = true;
             }
